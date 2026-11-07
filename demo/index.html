@@ -191,6 +191,28 @@ pre.csv{margin:0;background:var(--well);border-radius:16px;padding:14px;font-fam
 .qr{display:flex;gap:6px;flex-wrap:wrap}
 .qr button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer}
 
+/* booking detail */
+.bd-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+.bd-grid .col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1150px){.bd-grid{grid-template-columns:1fr}}
+.sr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:13.5px}
+.sr:last-child{border-bottom:0}
+.card > .sr + .sr{margin-top:-14px}
+.sr span{color:var(--muted)}
+.sr b{font-weight:500;text-align:right}
+.sr.big b{font-size:18px}
+.gt{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--ink);color:#fff;border-radius:16px;padding:14px 18px}
+.gt span{display:block;font-size:12px;opacity:.75;letter-spacing:.06em;text-transform:uppercase}
+.gt small{display:block;font-size:12px;opacity:.65}
+.gt b{font-family:var(--mono);font-size:24px;font-weight:500}
+.note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-radius:18px;padding:12px 16px;font-size:14px}
+.note .btn{margin-left:auto}
+.note.bad{background:var(--bad-bg);color:var(--bad)}
+.note.warn{background:var(--warn-bg);color:var(--warn)}
+.dash{border-top:1px dashed var(--line);margin:4px 0}
+.ppic{width:40px;height:52px;border-radius:8px;background:linear-gradient(135deg,#DCEBFA,#F4F7FB);flex:none}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.conv[disabled]{opacity:.5;cursor:not-allowed}
 /* charts */
 svg.chart{width:100%;height:auto;display:block}
 svg.chart text{fill:var(--muted);font-family:var(--mono);font-size:10px}
@@ -271,6 +293,49 @@ home:'<path d="M4 11l8-7 8 7v9H4z"/>',board:'<rect x="3" y="4" width="18" height
 function ic(n){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>';}
 var CH={airbnb:{n:'Airbnb',c:'ab',fee:.15},booking:{n:'Booking.com',c:'bc',fee:.15},agoda:{n:'Agoda',c:'ag',fee:.17},trip:{n:'Trip.com',c:'tc',fee:.15},direct:{n:'Direct',c:'dr',fee:0},agent:{n:'Agent',c:'at',fee:.1}};
 
+/* ---------- booking detail page ---------- */
+var OTA_CH={airbnb:1,booking:1,agoda:1,trip:1};
+var REQ=[['early_checkin','Early Check-in','ECI','#0F766E','#E6F4F2'],['late_checkin','Late Check-in','LCI','#7C3AED','#F1EBFC'],['late_checkout','Late Check-out','LCO','#B45309','#FDF3E3'],['early_checkout','Early Check-out','ECO','#0369A1','#E4F1F8'],['extra_bed','Extra Bed','XB','#BE185D','#FCEBF2']];
+var PAYL={paid:['ok','Paid'],paid_online:['ok','Paid online'],partial:['warn','Partial'],pending:['bad','Unpaid'],refunded:['out','Refunded']};
+var FEES=[['Extra bed',300],['Parking',100],['Late check-out',500],['Airport pickup',600],['Laundry',150],['Damage',0]];
+var PAYVIA={cash:'Cash',transfer:'Bank transfer',card:'Card',beam:'Beam · PromptPay / card',ota:'Paid to OTA'};
+function sync(b){b.total=b.rates.reduce(function(s,x){return s+x.r;},0)+b.fees.reduce(function(s,x){return s+x.a;},0);b.paid=b.payments.reduce(function(s,x){return s+x.amount;},0);}
+function payStatus(b){if(b.refunded)return 'refunded';if(b.paid<=0)return 'pending';if(b.paid<b.total)return 'partial';return b.payments.every(function(p){return p.via==='ota';})?'paid_online':'paid';}
+function occOf(g){return {name:g.name,nat:g.nat,doc:g.doc,no:g.no,dob:g.dob,sex:/Emma|Anna|Sophie|Siti|Chen Yu|Ploy/.test(g.name)?'F':'M'};}
+function enrich(b,i,guests){var n=Math.max(1,diff(b.in,b.out)),per=Math.round(b.total/n),g=guests.find(function(x){return x.id===b.g;});
+b.rates=[];for(var k=0;k<n;k++)b.rates.push({d:addDays(b.in,k),r:per});
+b.fees=b.fees||[];
+b.payments=b.paid>0?[{via:OTA_CH[b.ch]?'ota':(b.ch==='direct'?'beam':'transfer'),amount:b.paid,at:fd(addDays(b.in,-2))+' 10:2'+(i%10),ref:OTA_CH[b.ch]?CH[b.ch].n+' collected':(b.ch==='direct'?'pay.beamcheckout.com':'Agent transfer')}]:[];
+b.otaRef=OTA_CH[b.ch]?b.ref:'';b.booked=addDays(b.in,-(4+(i*7)%23));b.reqs=[];b.plates=[];b.internal='';b.guestsN=b.adults;b.cxl=null;b.refunded=false;
+b.token=(b.id.replace('MT-','')+'x'+(1000+i*37)).toString(36)+'k'+i;
+b.occ=b.form==='done'&&g&&g.no?[occOf(g)]:[];
+b.actualIn=(b.status==='checked_in'||b.status==='checked_out')?fd(b.in)+' 15:4'+(i%10):null;b.actualOut=b.status==='checked_out'?fd(b.out)+' 10:5'+(i%10):null;
+b.emails=[{kind:'Booking confirmation',lang:g&&g.lang==='th'?'TH':'EN',at:fd(b.booked)+' 09:1'+(i%10),st:'Delivered'}];
+if(b.form!=='none')b.emails.push({kind:'Check-in form link',lang:'EN',at:fd(addDays(b.in,-1))+' 10:0'+(i%10),st:'Opened'});
+if(b.door){b.door.onLock=!b.door.box;b.emails.push({kind:'Check-in email · door code',lang:'EN',at:fd(b.in)+' '+(b.door.sent||'12:00'),st:'Opened'});}
+b.ical=OTA_CH[b.ch]?{uid:(b.ref+'@'+{airbnb:'airbnb.com',booking:'booking.com',agoda:'agoda.com',trip:'trip.com'}[b.ch]).toLowerCase(),seen:'09:1'+(i%10)}:null;
+b.agent=b.ch==='agent'?{name:'Hatyai Tours',contact:'Khun Bee',phone:'081 555 0101',email:'bee@hatyaitours.example',voucher:'HYT-2026-118',rate:15,terms:'Monthly, 15 days after month end'}:null;
+}
+function seedDetails(bookings,guests){bookings.forEach(function(b,i){enrich(b,i,guests);});
+var e=bookings.find(function(b){return b.id==='MT-1042';});e.reqs=['late_checkin'];e.occ.push({name:'James Wilson',nat:'GBR',doc:'Passport',no:'533201876',dob:'1992-08-30',sex:'M'});
+var l=bookings.find(function(b){return b.id==='MT-1043';});l.occ.push({name:'Zhang Min',nat:'CHN',doc:'Passport',no:'E77120938',dob:'1991-04-18',sex:'F'});
+var k=bookings.find(function(b){return b.id==='MT-1045';});k.reqs=['early_checkin'];k.plates=['กข 1234 เชียงใหม่'];k.fees=[{n:'Airport pickup',a:600}];k.payments=[{via:'transfer',amount:3000,at:fd(D(-3))+' 14:05',ref:'KBank transfer · deposit'}];
+var s=bookings.find(function(b){return b.id==='MT-1044';});s.reqs=['extra_bed'];s.fees=[{n:'Extra bed',a:300}];s.payments.push({via:'cash',amount:300,at:fd(D(-1))+' 18:30',ref:'Paid at desk'});s.guestsN=3;
+bookings.forEach(sync);}
+function reqTags(b){return b.reqs.map(function(k){var q=REQ.find(function(x){return x[0]===k;});return '<span class="pill" style="background:'+q[4]+';color:'+q[3]+'" title="'+q[1]+'">'+q[2]+' · '+q[1]+'</span>';}).join('');}
+function sr(l,v,o){o=o||{};return '<div class="sr'+(o.big?' big':'')+'"><span>'+l+'</span><b class="'+(o.mono?'num':'')+'" style="'+(o.tone?'color:'+o.tone:'')+'">'+v+'</b></div>';}
+function fr(id,l,inner){return '<label class="f" for="'+id+'">'+l+inner+'</label>';}
+function inp(id,f,v,extra){return '<input id="'+id+'" class="input" data-bf="'+f+'" value="'+esc(v)+'"'+(extra||'')+'>';}
+function lnk(b,k){return 'https://app.mounta.co/'+(k==='pass'?'pass':'c')+'/'+b.token;}
+function waTexts(b){var g=G(b.g),f=g.name.split(' ')[0],s=S.settings;return [
+['After booking','Hi '+f+', thank you for booking '+s.name+'! Your stay: '+fd(b.in)+' → '+fd(b.out)+'. We will send your check-in link before you arrive.'],
+['Before arrival · check-in form link','Hi '+f+', please check in online before you arrive (about 2 minutes, just take a photo of your passport): '+lnk(b,'c')],
+['After check-in · during stay','Welcome '+f+'! Your stay pass has the door code, Wi-Fi and house guide: '+lnk(b,'pass')+'. Message us any time.'],
+['Before check-out','Hi '+f+', a reminder that check-out is by '+s.cout+' tomorrow. Leave the key in the room. Safe travels!'],
+['After check-out · review request','Thank you for staying with us, '+f+'! If you enjoyed it, a review on '+CH[b.ch].n+' would mean a lot to our small team.']];}
+function card(t,body,right){return '<section class="card"><div class="ch"><h3>'+t+'</h3>'+(right||'')+'</div>'+body+'</section>';}
+
+
 /* ---------- data ---------- */
 function seed(){
 var rooms=[
@@ -315,6 +380,7 @@ bk('MT-1020','g12','L2',-9,-6,'airbnb','checked_out',1600,{paid:'all',form:'done
 bk('MT-1022','g9','G1',-8,-4,'direct','checked_out',1400,{paid:'all',form:'done'}),
 bk('MT-1025','g7','S3',-7,-5,'trip','checked_out',1200,{paid:'all',form:'done'})];
 bookings.forEach(function(b){if(b.paid==='all')b.paid=b.total;});
+seedDetails(bookings,guests);
 var chats=[
 {b:'MT-1043',unread:1,m:[{f:'g',t:'请问可以提前入住吗？我们中午12点到。',tr:'ขอเช็คอินก่อนเวลาได้ไหม เรามาถึงเที่ยงตรง',at:'09:41'}]},
 {b:'MT-1042',unread:1,m:[{f:'g',t:'Hi! Could we get one more towel tonight?',tr:'สวัสดีค่ะ คืนนี้ขอผ้าเช็ดตัวเพิ่มอีกผืนได้ไหม',at:'21:40'}]},
@@ -341,7 +407,7 @@ function G(id){return S.guests.find(function(g){return g.id===id;});}
 function B(id){return S.bookings.find(function(b){return b.id===id;});}
 function R(id){return S.rooms.find(function(r){return r.id===id;});}
 function log(who,what){S.log.unshift({at:now(),who:who,what:what});}
-function live(b){return b.status!=='cancelled';}
+function live(b){return b.status!=='cancelled'&&b.status!=='no_show';}
 function occupying(b,day){return live(b)&&b.in<=day&&b.out>day;}
 function arrivals(){return S.bookings.filter(function(b){return live(b)&&b.in===TODAY;});}
 function departures(){return S.bookings.filter(function(b){return live(b)&&b.out===TODAY;});}
@@ -351,7 +417,7 @@ function occ(day){var n=S.bookings.filter(function(b){return occupying(b,day);})
 function rateFor(type,day){var k=type+'|'+day;if(S.rateOv[k]!=null)return S.rateOv[k];var w=new Date(day+'T00:00:00Z').getUTCDay();return S.rates[type]+((w===5||w===6)?300:0);}
 function fee(b){return Math.round(b.total*CH[b.ch].fee);}
 function chPill(ch){return '<span class="pill '+CH[ch].c+'">'+CH[ch].n+'</span>';}
-function stPill(b){var m={confirmed:['act','Confirmed'],checked_in:['ink','Checked in'],checked_out:['out','Checked out'],cancelled:['out','Cancelled']}[b.status];return '<span class="pill '+m[0]+'">'+m[1]+'</span>';}
+function stPill(b){var m={confirmed:['act','Confirmed'],checked_in:['ink','Checked in'],checked_out:['out','Checked out'],cancelled:['out','Cancelled'],no_show:['out','No show']}[b.status];return '<span class="pill '+m[0]+'">'+m[1]+'</span>';}
 function formPill(b){return b.form==='done'?'<span class="pill ok">Online check-in done</span>':b.form==='sent'?'<span class="pill warn">Link sent</span>':'<span class="pill">Not sent</span>';}
 function bal(b){return b.total-b.paid;}
 function unread(){return S.chats.reduce(function(a,c){return a+c.unread;},0);}
@@ -363,11 +429,11 @@ var NAV=[
 'Finance',['payouts','Payouts & bank','bank'],['accounting','Accounting','money'],['reports','Reports','chart'],
 'Guest views',['gv-checkin','Online check-in','phone'],['gv-pass','Stay pass','key'],['gv-kiosk','Kiosk','tablet'],
 'Admin',['staff','Staff & access','user'],['log','Activity log','list'],['property','Settings','gear']];
-var TITLES={};NAV.forEach(function(n){if(typeof n!=='string')TITLES[n[0]]=n[1];});
+var TITLES={booking:'Booking'};NAV.forEach(function(n){if(typeof n!=='string')TITLES[n[0]]=n[1];});
 function renderNav(){
 var h='';NAV.forEach(function(n){
 if(typeof n==='string'){h+='<div class="div"></div><div class="grp">'+n+'</div>';return;}
-var on=UI.route===n[0]?' on':'';var cnt=n[0]==='chat'&&unread()?'<span class="cnt">'+unread()+'</span>':'';
+var on=(UI.route===n[0]||(UI.route==='booking'&&n[0]==='bookings'))?' on':'';var cnt=n[0]==='chat'&&unread()?'<span class="cnt">'+unread()+'</span>':'';
 h+='<button class="ni'+on+'" data-go="'+n[0]+'">'+ic(n[2])+esc(n[1])+cnt+'</button>';});
 document.getElementById('nav').innerHTML=h;
 var tb=[['overview','Today','home'],['board','Board','board'],['bookings','Bookings','cal'],['chat','Chat','chat']];
@@ -540,21 +606,77 @@ P.property=function(){var s=S.settings;return '<div class="ph"><div><div class="
 function fld(id,l,v){return '<label class="f" for="'+id+'">'+l+'<input id="'+id+'" class="input" value="'+esc(v)+'"></label>';}
 
 /* ---------- drawer / modal ---------- */
-function drawerHTML(){var b=B(UI.drawer);if(!b)return '';var g=G(b.g),r=R(b.room),n=diff(b.in,b.out);
-var door=b.door?'<div class="card" style="background:var(--ink);color:#fff;gap:6px"><span class="cap" style="color:#C9D8EA">'+(b.door.box?'Key box '+r.box+' code':'Door code · TTLock · '+r.name)+'</span><span class="code" style="color:var(--sky)">'+b.door.code+(b.door.box?'':'#')+'</span><span class="cap" style="color:#C9D8EA">Valid '+fd(b.in)+' '+S.settings.cin+' → '+fd(b.out)+' '+S.settings.cout+(b.door.sent?' · sent '+b.door.sent:'')+'</span></div>':'';
-var acts='';if(b.status==='confirmed')acts+='<button class="btn" data-act="checkin" data-id="'+b.id+'">Check in</button>';if(b.status==='checked_in')acts+='<button class="btn" data-act="checkout" data-id="'+b.id+'">Check out</button>';
-return '<div class="scrim" data-act="closeDrawer"><aside class="drawer" role="dialog" aria-label="Booking '+b.id+'" data-stop="1">'+
-'<div class="mh"><div><div class="cap mono">'+b.id+' · '+esc(b.ref)+'</div><h2>'+esc(g.name)+'</h2><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+chPill(b.ch)+stPill(b)+'</div></div><button class="x" data-act="closeDrawer" aria-label="Close">×</button></div>'+
-'<div class="card" style="gap:4px"><div class="row"><div class="g"><b>'+r.name+'</b><small>'+r.type+' · '+b.adults+' adults</small></div>'+(b.status==='confirmed'?'<select class="input" style="width:auto;padding:6px 10px" data-change="moveRoom" data-id="'+b.id+'" aria-label="Move room">'+S.rooms.map(function(x){return '<option value="'+x.id+'"'+(x.id===b.room?' selected':'')+'>'+x.name+'</option>';}).join('')+'</select>':'')+'</div><div class="row"><div class="g"><b>'+fdw(b.in)+' → '+fdw(b.out)+'</b><small>'+n+' nights · check-in from '+S.settings.cin+'</small></div></div>'+(b.notes?'<div class="row"><div class="g"><b>Guest note</b><small>'+esc(b.notes)+'</small></div></div>':'')+'</div>'+
-'<div class="card" style="gap:8px"><div class="ch"><h3>Online check-in</h3>'+formPill(b)+'</div>'+(b.form==='done'?'<div class="row"><div class="g"><b>'+esc(g.doc)+' · '+g.nat+'</b><small class="mono">'+esc(g.no)+' · read from photo</small></div><span class="pill ok">TM30 ready</span></div>':'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm blue" data-act="sendLink" data-id="'+b.id+'">'+(b.form==='sent'?'Resend link':'Send check-in link')+'</button><button class="btn sm sec" data-act="gvCheckin" data-id="'+b.id+'">Open as guest</button></div>')+'</div>'+
-'<div class="card" style="gap:8px"><div class="ch"><h3>Door access</h3>'+(r.lock==='ttlock'?'<span class="pill">TTLock</span>':'<span class="pill">Key box '+r.box+'</span>')+'</div>'+door+(live(b)&&b.status!=='checked_out'?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="issueCode" data-id="'+b.id+'">'+(b.door?(r.lock==='ttlock'?'Issue new code on TTLock':'Resend box code'):(r.lock==='ttlock'?'Create code on TTLock':'Send box code'))+'</button>'+(b.door?'<button class="btn sm sec" data-act="gvPass" data-id="'+b.id+'">Open stay pass</button>':'')+'</div>':'')+'</div>'+
-'<div class="card" style="gap:4px"><div class="ch"><h3>Payment</h3>'+(bal(b)>0?'<span class="pill bad">Balance '+baht(bal(b))+'</span>':'<span class="pill ok">Paid</span>')+'</div><div class="row"><div class="g">Room · '+n+' nights</div><span class="num">'+baht(b.total)+'</span></div><div class="row"><div class="g">Paid</div><span class="num">'+baht(b.paid)+'</span></div>'+(CH[b.ch].fee?'<div class="row"><div class="g">'+CH[b.ch].n+' commission</div><span class="num">−'+baht(fee(b))+'</span></div><div class="row"><div class="g"><b>Net to you</b></div><b class="num" style="font-weight:500">'+baht(b.total-fee(b))+'</b></div>':'')+(b.pay?'<div class="well" style="padding:12px;display:flex;flex-direction:column;gap:6px;margin-top:6px"><span class="cap">Beam payment link · card, PromptPay, mobile banking</span><span class="mono" style="font-size:12px;word-break:break-all">'+b.pay+'</span><div style="display:flex;gap:8px"><button class="btn sm sec" data-act="copy" data-v="'+b.pay+'">Copy</button><button class="btn sm blue" data-act="markPaid" data-id="'+b.id+'">Guest paid (simulate)</button></div></div>':'')+(bal(b)>0&&live(b)&&!b.pay?'<button class="btn sm blue" style="align-self:flex-start;margin-top:6px" data-act="payLink" data-id="'+b.id+'">Create payment link (Beam)</button>':'')+'</div>'+
-'<div style="display:flex;gap:8px;flex-wrap:wrap">'+acts+(S.chats.some(function(c){return c.b===b.id;})?'<button class="btn sec" data-act="chatSel" data-id="'+b.id+'">Chat</button>':'')+(b.status==='confirmed'?'<button class="btn danger" data-act="askCancel" data-id="'+b.id+'">Cancel booking</button>':'')+'</div>'+
-'</aside></div>';}
+P.booking=function(){var b=B(UI.bid);if(!b)return '<div class="card empty">This booking no longer exists. <button class="btn sm sec" data-go="bookings">All bookings</button></div>';
+var g=G(b.g),r=R(b.room),n=diff(b.in,b.out),ps=payStatus(b),isOta=!!OTA_CH[b.ch],c=S.chats.find(function(x){return x.b===b.id;}),cu=c?c.unread:0,open=b.status!=='cancelled'&&b.status!=='no_show';
+var h='<div><button class="btn ghost sm" data-go="bookings">← All bookings</button></div>';
+h+='<div class="ph" style="align-items:flex-start"><div style="flex:1 1 300px;min-width:0"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+stPill(b)+chPill(b.ch)+reqTags(b)+(b.plates.length?'<span class="pill">Car · '+esc(b.plates[0])+'</span>':'')+'<span class="pill '+PAYL[ps][0]+'">'+PAYL[ps][1]+'</span></div><h1 class="mono" style="font-size:30px;letter-spacing:.02em">'+b.id+'</h1><div class="sub">'+esc(S.settings.name)+'<br>'+fdw(b.in)+' → '+fdw(b.out)+' · <b style="font-weight:600">'+n+' nights</b> · '+b.guestsN+' guests</div><div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill ink">'+r.name+' · '+r.type+'</span>'+(open&&b.status!=='checked_out'?'<button class="btn sm sec" data-act="moveOpen">Move room</button>':'')+'</div></div>';
+var a='<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex:1 1 360px"><div class="acts" style="justify-content:flex-end"><button class="btn blue" data-act="cashier">Cashier</button><button class="btn sec" data-act="chatSel" data-id="'+b.id+'">Chat with guest'+(cu?' <span class="pill act" style="padding:1px 7px">'+cu+'</span>':'')+'</button><button class="btn sec" data-act="rr3" data-id="'+b.id+'">ร.ร.3 card</button>';
+if(b.status==='confirmed')a+='<button class="btn" data-act="checkin" data-id="'+b.id+'">Check in</button>';
+if(b.status==='checked_in')a+='<button class="btn" data-act="checkout" data-id="'+b.id+'">Check out</button>';
+a+='</div><div class="acts" style="justify-content:flex-end">';
+if(b.status==='checked_in')a+='<button class="btn sm sec" data-act="undoIn">↩ Undo check-in</button>';
+if(b.status==='checked_out')a+='<button class="btn sm sec" data-act="undoOut">↩ Undo check-out</button>';
+if(open){a+='<button class="btn sm sec" data-act="email" data-k="confirm" data-l="TH">✉ ยืนยันการจอง (ไทย)</button><button class="btn sm sec" data-act="email" data-k="confirm" data-l="EN">✉ Confirmation (EN)</button><button class="btn sm sec" data-act="email" data-k="checkin" data-l="TH">Check-in email (ไทย)</button><button class="btn sm sec" data-act="email" data-k="checkin" data-l="EN">Check-in email (EN)</button>';}
+if(open&&b.payments.length&&!b.refunded&&b.payments[b.payments.length-1].via!=='ota')a+='<button class="btn sm sec" data-act="undoPay">↩ Undo payment</button>';
+if(b.status==='confirmed')a+='<button class="btn sm sec" data-act="noShow">No show</button>';
+if(b.status==='confirmed'&&b.in<TODAY&&n>1)a+='<button class="btn sm sec" data-act="noShowFirst">No show · first night</button>';
+if(open&&b.status!=='checked_out')a+='<button class="btn sm sec" data-act="cancelOpen">Cancel</button>';
+if(b.paid>0&&!b.refunded)a+='<button class="btn sm sec" data-act="refundOpen">↩ Refund</button>';
+a+='<button class="btn sm danger" data-act="delOpen">Delete</button></div></div>';
+h+=a+'</div>';
+if(b.status==='cancelled')h+='<div class="note bad"><b>'+(b.cxl?b.cxl.type+' · '+(b.cxl.type==='CXL'?'Cancelled by hotel':'Cancelled by guest'):'Cancelled')+'</b>'+(b.cxl&&b.cxl.reason?' · '+esc(b.cxl.reason):'')+(b.refunded?' · refunded':'')+'<button class="btn sm sec" data-act="restore">Restore booking</button></div>';
+if(b.status==='no_show')h+='<div class="note warn"><b>No show</b> · the room was released and the amount is kept.<button class="btn sm sec" data-act="restore">Guest arrived · restore</button></div>';
+if(b.noShowFirst)h+='<div class="note warn"><b>First night no-show</b> · arrival moved to '+fdw(b.in)+'. Room, door code and amount kept.</div>';
+
+var L='';
+L+=card('Reservation number','<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="mono" style="font-size:26px;font-weight:500;letter-spacing:.04em">'+b.id+'</span><button class="btn sm sec" data-act="copy" data-v="'+b.id+'">Copy</button></div><span class="cap">Numbered automatically and cannot be edited. The folio, check-in link and every email sent point to it.</span>');
+if(isOta||b.otaRef)L+=card('OTA reservation no.',inp('bf_ota','otaRef',b.otaRef,' style="font-family:var(--mono)"')+'<span class="cap">The number '+CH[b.ch].n+' gave this booking. Used to match payouts.</span>');
+var chOpts=Object.keys(CH).map(function(k){return '<option value="'+k+'"'+(b.ch===k?' selected':'')+'>'+CH[k].n+'</option>';}).join('');
+var stOpts=[['confirmed','Confirmed'],['checked_in','Checked in'],['checked_out','Checked out'],['no_show','No show'],['cancelled','Cancelled']].map(function(s){return '<option value="'+s[0]+'"'+(b.status===s[0]?' selected':'')+'>'+s[1]+'</option>';}).join('');
+var agentHtml=b.ch==='agent'?'<div class="form">'+fr('bf_ag','Travel agent','<select id="bf_ag" class="input" data-bf="agentName">'+S.agents.map(function(x){return '<option'+(b.agent&&b.agent.name===x.name?' selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select>')+fr('bf_v','Voucher no.',inp('bf_v','voucher',b.agent?b.agent.voucher:''))+fr('bf_cm','Commission (฿)','<input id="bf_cm" class="input num" readonly value="'+(b.agent?Math.round(b.total*b.agent.rate/100):0)+'">')+'</div>':'';
+L+=card('Channel &amp; status','<div class="form">'+fr('bf_ch','Booking channel','<select id="bf_ch" class="input" data-bf="ch">'+chOpts+'</select>')+fr('bf_st','Stay status','<select id="bf_st" class="input" data-bf="status">'+stOpts+'</select>')+'</div>'+agentHtml);
+var win=diff(b.booked,b.in);
+L+=card('Dates &amp; schedule','<div class="form">'+fr('bf_bk','Booked on','<input id="bf_bk" type="date" class="input" data-bf="booked" value="'+b.booked+'">')+fr('bf_in','Check-in','<input id="bf_in" type="date" class="input" data-bf="in" value="'+b.in+'">')+fr('bf_out','Check-out','<input id="bf_out" type="date" class="input" data-bf="out" value="'+b.out+'">')+'</div><div class="form">'+sr('Book window',win<=0?'Same day':win+' days ahead',{mono:1})+sr('Length of stay',n+' night'+(n>1?'s':''),{mono:1})+'</div>');
+var fs=b.form==='done'?'<span class="pill ok">✓ Completed</span>':b.form==='sent'?'<span class="pill warn">Sent · waiting for guest</span>':'<span class="pill">Not sent yet</span>';
+L+=card('Check-in form','<div style="display:flex;gap:8px;flex-wrap:wrap"><input class="input mono" style="flex:1;min-width:220px;font-size:12px" readonly value="'+lnk(b,'c')+'" aria-label="Check-in link"><button class="btn sm" data-act="copy" data-v="'+lnk(b,'c')+'">Copy link</button><button class="btn sm sec" data-act="gvCheckin" data-id="'+b.id+'">Open</button></div><span class="cap">Send by email, LINE, WhatsApp or the OTA chat. The guest takes a photo of their passport, accepts the house rules and gets the door code.</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm blue" data-act="sendLink" data-id="'+b.id+'">'+(b.form==='none'?'Send check-in link':'Resend link')+'</button><button class="btn sm sec" data-act="regenLink">↻ New link (old one stops working)</button></div>'+
+'<div class="dash"></div><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><b style="font-weight:600">Stay pass</b><span class="cap">door code · key box · Wi-Fi · house guide</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="input mono" style="flex:1;min-width:220px;font-size:12px" readonly value="'+lnk(b,'pass')+'" aria-label="Stay pass link"><button class="btn sm" data-act="copy" data-v="'+lnk(b,'pass')+'">Copy link</button><button class="btn sm sec" data-act="gvPass" data-id="'+b.id+'">Open</button></div><span class="cap">The pass reads the latest values every time it opens. Issue a new code and the guest’s link shows it, no need to resend.'+(b.form!=='done'?' <span style="color:var(--warn)">Not checked in yet, so the door code is hidden on the pass.</span>':'')+'</span>',fs);
+var occ=b.occ.map(function(o,i){return '<div class="row"><div class="ppic" aria-hidden="true"></div><div class="g"><b>'+esc(o.name)+'</b><small class="mono">'+o.nat+' · '+esc(o.doc)+' '+esc(o.no)+' · '+(o.dob||'—')+' · '+o.sex+'</small></div><span class="pill ok">TM30 ready</span><button class="btn sm ghost" data-act="rmOcc" data-i="'+i+'" aria-label="Remove '+esc(o.name)+'">Remove</button></div>';}).join('');
+L+=card('Registered guests · TM30 &amp; ร.ร.3',(occ||'<div class="empty" style="padding:14px">Nobody registered yet. Guests appear here when they check in online, or add them at the desk.</div>')+(b.occ.length<b.guestsN?'<span class="cap" style="color:var(--warn)">'+(b.guestsN-b.occ.length)+' of '+b.guestsN+' guests still to register.</span>':'')+'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm blue" data-act="addOccOpen">+ Add guest from photo</button><button class="btn sm sec" data-act="importOcc">Returning guest</button></div>','<span class="cap">'+b.occ.length+' / '+b.guestsN+'</span>');
+L+=card('Guest information','<div class="form">'+(isOta?fr('gf_ota','Name on '+CH[b.ch].n,'<input id="gf_ota" class="input" readonly value="'+esc(g.name.split(' ')[0])+'">'):'')+fr('gf_name','Full name (passport)','<input id="gf_name" class="input" data-gf="name" value="'+esc(g.name)+'">')+fr('gf_nat','Nationality','<input id="gf_nat" class="input" data-gf="nat" value="'+esc(g.nat)+'">')+fr('gf_ph','Phone','<input id="gf_ph" class="input" data-gf="phone" value="'+esc(g.phone)+'">')+fr('gf_em','Email','<input id="gf_em" class="input" data-gf="email" value="'+esc(g.email)+'">')+fr('gf_no','Passport / ID number','<input id="gf_no" class="input mono" data-gf="no" value="'+esc(g.no)+'">')+fr('bf_gn','Number of guests','<input id="bf_gn" type="number" min="1" max="8" class="input" data-bf="guestsN" value="'+b.guestsN+'">')+'</div>');
+var chRate=rateFor(r.type,b.in);
+var rl=b.rates.map(function(x,i){return '<div class="row"><div class="g"><b class="num">'+fdw(x.d)+'</b>'+(b.noShowFirst&&i===0?'<small>No-show night · charged</small>':'')+'</div><label class="sr-only" for="rate'+i+'">Rate '+fd(x.d)+'</label><input id="rate'+i+'" class="input num" style="width:120px;text-align:right" type="number" data-rate="'+i+'" value="'+x.r+'"></div>';}).join('');
+var fl=b.fees.map(function(x,i){return '<div class="row"><div class="g"><b>'+esc(x.n)+'</b></div><span class="num">'+baht(x.a)+'</span><button class="btn sm ghost" data-act="feeRm" data-i="'+i+'">Remove</button></div>';}).join('');
+var bl=b.total-b.paid;
+L+=card('Payment · rate breakdown',rl+'<b style="font-weight:500;margin-top:4px">Extra fees</b>'+(fl||'<span class="cap">No extra fees</span>')+'<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="sr-only" for="feeSel">Fee</label><select id="feeSel" class="input" style="width:auto">'+FEES.map(function(f,i){return '<option value="'+i+'">'+f[0]+'</option>';}).join('')+'</select><label class="sr-only" for="feeAmt">Amount</label><input id="feeAmt" class="input num" type="number" placeholder="Amount ฿" style="width:130px"><button class="btn sm" data-act="feeAdd">Add fee</button></div><div class="gt"><div><span>Grand total</span><small>Rooms '+baht(b.rates.reduce(function(s,x){return s+x.r;},0))+(b.fees.length?' + Fees '+baht(b.fees.reduce(function(s,x){return s+x.a;},0)):'')+'</small></div><b>'+baht(b.total)+'</b></div><div class="form">'+sr('Received',baht(b.paid),{mono:1})+sr('Payment status','<span class="pill '+PAYL[ps][0]+'">'+PAYL[ps][1]+'</span>')+sr('Balance',bl===0?'✓ Paid in full':bl<0?'Overpaid '+baht(-bl):'Outstanding '+baht(bl),{mono:1,tone:bl===0?'var(--ok)':bl<0?'var(--blue)':'var(--warn)'})+'</div>','<button class="btn sm sec" data-act="rateReset">↻ Reset to channel rate '+baht(chRate)+'</button>');
+var dc=b.door?b.door.code:'',cs=b.codeStart||(b.in+'T'+S.settings.cin),ce=b.codeEnd||(b.out+'T'+S.settings.cout);
+var acc=r.lock==='box'?'<div class="well" style="padding:12px 14px">Key box '+r.box+' · code <b class="mono">'+r.boxCode+'</b>. '+(b.door?'Sent to the guest '+(b.door.sent||'')+'.':'Not sent yet.')+'</div><button class="btn sm" style="align-self:flex-start" data-act="issueCode" data-id="'+b.id+'">'+(b.door?'Resend box code':'Send box code')+'</button>':
+fr('bf_door','Door code · TTLock · '+r.name,'<input id="bf_door" class="input mono" style="font-size:24px;letter-spacing:.2em;text-align:center" data-bf="door" value="'+esc(dc)+'" placeholder="e.g. 482193">')+(b.door&&!b.door.onLock?'<div class="note warn" style="margin:0">This code is <b>not on the TTLock yet</b>. Press “Set this code on the lock”, or create a random one.</div>':b.door?'<span class="cap" style="color:var(--ok)">✓ On the lock · '+r.name+'</span>':'')+
+'<span class="cap">Valid from → until. Change it for an early arrival or late check-out. TTLock rounds to the whole hour, never shortening the stay.</span><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><label class="sr-only" for="bf_cs">Valid from</label><input id="bf_cs" type="datetime-local" class="input" style="flex:1;min-width:190px" data-bf="codeStart" value="'+cs+'"><span class="cap">→</span><label class="sr-only" for="bf_ce">Valid until</label><input id="bf_ce" type="datetime-local" class="input" style="flex:1;min-width:190px" data-bf="codeEnd" value="'+ce+'"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm blue" data-act="ttRandom">TTLock · create random code</button><button class="btn sm sec" data-act="ttSet">Set this code on the lock</button></div>';
+L+=card('Access &amp; notes',acc+fr('bf_pl','Vehicle plates · first one uses the included space, comma separated',inp('bf_pl','plates',b.plates.join(', ')))+fr('bf_nt','Internal notes · not shown to the guest','<textarea id="bf_nt" class="input" data-bf="internal" placeholder="Anything the team should know">'+esc(b.internal)+'</textarea>')+(b.notes?'<div class="well" style="padding:12px 14px"><span class="cap">Guest wrote</span><br>'+esc(b.notes)+'</div>':'')+'<b style="font-weight:500">Special requests</b><div style="display:flex;gap:6px;flex-wrap:wrap">'+REQ.map(function(q){var on=b.reqs.indexOf(q[0])>=0;return '<button class="pill" style="border:0;cursor:pointer;min-height:32px;'+(on?'background:'+q[4]+';color:'+q[3]+';box-shadow:inset 0 0 0 1.5px '+q[3]:'background:var(--well);color:var(--muted)')+'" aria-pressed="'+on+'" data-act="reqToggle" data-k="'+q[0]+'">'+q[2]+' · '+q[1]+'</button>';}).join('')+'</div>');
+L+=card('Emails sent to the guest',b.emails.slice().reverse().map(function(m,i){var j=b.emails.length-1-i;return '<div class="row"><div class="g"><b>'+m.kind+' · '+m.lang+'</b><small>'+m.at+'</small></div><span class="pill '+(m.st==='Opened'?'ok':'')+'">'+m.st+'</span><button class="btn sm sec" data-act="viewEmail" data-i="'+j+'">View</button></div>';}).join(''));
+L+=card('WhatsApp messages',waTexts(b).map(function(w){return '<div class="well" style="padding:12px 14px;display:flex;flex-direction:column;gap:6px"><div class="ch"><b style="font-weight:500">'+w[0]+'</b><button class="btn sm sec" data-act="copy" data-v="'+esc(w[1])+'">Copy</button></div><span class="cap" style="font-size:13px">'+esc(w[1])+'</span></div>';}).join(''),'<span class="cap">Copy, then paste into WhatsApp</span>');
+
+var Rt='';
+Rt+=card('Stay summary',sr('Booked on',fdw(b.booked))+sr('Check-in',fdw(b.in))+(b.actualIn?sr('Actual check-in',b.actualIn,{mono:1}):'')+sr('Check-out',fdw(b.out))+(b.actualOut?sr('Actual check-out',b.actualOut,{mono:1}):'')+sr('Nights',n,{mono:1})+sr('Book window',win<=0?'Same day':win+' days ahead',{mono:1})+sr('Guests',b.guestsN,{mono:1})+sr('Room',r.name)+sr('Type',r.type)+sr('Vehicles',b.plates.length?b.plates.map(function(p,i){return esc(p)+' <span class="cap">'+(i===0?'included':'extra')+'</span>';}).join('<br>'):'—'));
+Rt+=card('Payment',sr('Total',baht(b.total),{mono:1,big:1})+sr('Received',baht(b.paid),{mono:1,big:1})+(bl>0?sr('Balance',baht(bl),{mono:1,big:1,tone:'var(--warn)'}):'')+sr('Status','<span class="pill '+PAYL[ps][0]+'">'+PAYL[ps][1]+'</span>')+(b.payments.length?'<span class="cap" style="letter-spacing:.06em;text-transform:uppercase">Paid via</span>'+b.payments.map(function(p){return '<div class="well" style="padding:10px 12px;display:flex;justify-content:space-between;gap:10px"><div><b style="font-weight:500;font-size:13px">'+PAYVIA[p.via]+'</b>'+(p.via==='beam'?' <span class="pill act" style="font-size:10px;padding:1px 6px">ONLINE</span>':'')+'<div class="cap">'+esc(p.ref)+' · '+p.at+'</div></div><b class="num" style="font-weight:500;'+(p.amount<0?'color:var(--bad)':'')+'">'+(p.amount<0?'−':'')+baht(Math.abs(p.amount))+'</b></div>';}).join(''):'')+(CH[b.ch].fee&&isOta?sr(CH[b.ch].n+' commission','−'+baht(fee(b)),{mono:1})+sr('Net to you',baht(b.total-fee(b)),{mono:1}):''));
+if(b.agent)Rt+=card('Travel agent','<b style="font-weight:600">'+esc(b.agent.name)+'</b>'+sr('Contact',esc(b.agent.contact))+sr('Phone',esc(b.agent.phone),{mono:1})+sr('Email',esc(b.agent.email))+sr('Voucher',esc(b.agent.voucher),{mono:1})+sr('Commission rate',b.agent.rate.toFixed(1)+'%',{mono:1})+sr('Commission',baht(b.total*b.agent.rate/100),{mono:1})+sr('Net to hotel',baht(b.total*(1-b.agent.rate/100)),{mono:1})+sr('Payment terms',esc(b.agent.terms)));
+if(b.ical)Rt+=card('iCal source',sr('Feed',CH[b.ch].n+' · '+esc(S.settings.name))+sr('Event UID','<span class="mono" style="font-size:11px;word-break:break-all">'+esc(b.ical.uid)+'</span>')+sr('Last seen in feed','today '+b.ical.seen,{mono:1}));
+var acts=S.log.filter(function(l){return l.what.indexOf(b.id)>=0||l.what.indexOf(g.name)>=0;});
+Rt+=card('Activity',acts.length?acts.slice(0,8).map(function(l){return '<div class="row"><span class="dot" style="background:var(--blue)"></span><div class="g"><b style="font-weight:400">'+esc(l.what)+'</b><small>'+esc(l.who)+' · '+l.at+'</small></div></div>';}).join(''):'<span class="cap">Nothing yet today</span>');
+return h+'<div class="bd-grid"><div class="col">'+L+'</div><div class="col">'+Rt+'</div></div><span class="cap" style="text-align:center">Changes on this page save as you make them.</span>';};
+
+/* folio / cashier */
+function cashierHTML(b,msg){var charges=b.rates.map(function(x){return ['Room · '+fdw(x.d),x.r];}).concat(b.fees.map(function(f){return [f.n,f.a];}));var bl=b.total-b.paid;
+return mh('Cashier · folio',b.id+' · '+esc(G(b.g).name)+' · '+R(b.room).name)+(msg?'<div class="note warn" style="margin:0">'+msg+'</div>':'')+
+'<div class="card" style="background:var(--well);padding:16px 18px;gap:4px"><b style="font-weight:500">Charges</b>'+charges.map(function(c){return sr(c[0],baht(c[1]),{mono:1});}).join('')+sr('Total charges',baht(b.total),{mono:1,big:1})+'</div>'+
+'<div class="card" style="background:var(--well);padding:16px 18px;gap:4px"><b style="font-weight:500">Settlements</b>'+(b.payments.length?b.payments.map(function(p){return sr(PAYVIA[p.via]+' · '+p.at,(p.amount<0?'−':'')+baht(Math.abs(p.amount)),{mono:1});}).join(''):'<span class="cap">No payments yet</span>')+'</div>'+
+'<div class="gt"><div><span>Balance</span><small>'+(bl<=0?'Settled':'Still to collect')+'</small></div><b>'+baht(Math.max(0,bl))+'</b></div>'+
+(bl>0?'<div class="form">'+fr('cp_m','Payment method','<select id="cp_m" class="input"><option value="cash">Cash</option><option value="transfer">Bank transfer</option><option value="card">Card</option><option value="beam">Beam · PromptPay / card link</option></select>')+fr('cp_a','Amount (฿)','<input id="cp_a" type="number" class="input num" value="'+bl+'">')+'</div><button class="btn blue" data-act="postPay">Post payment</button>':'')+
+(b.status==='checked_in'?'<button class="btn"'+(bl>0?' disabled':'')+' data-act="checkout" data-id="'+b.id+'">Check out</button>':'')+'<button class="btn sec" data-act="closeModal">Close</button>';}
 
 function modal(html,cls){UI.modal={html:html,cls:cls||''};paintLayer();}
 function closeModal(){UI.modal=null;paintLayer();}
-function paintLayer(){var h='';if(UI.drawer)h+=drawerHTML();if(UI.modal)h+='<div class="scrim center" data-act="closeModal"><div class="modal '+UI.modal.cls+'" role="dialog" aria-modal="true" data-stop="1">'+UI.modal.html+'</div></div>';document.getElementById('layer').innerHTML=h;}
+function paintLayer(){var h='';if(UI.modal)h+='<div class="scrim center" data-act="closeModal"><div class="modal '+UI.modal.cls+'" role="dialog" aria-modal="true" data-stop="1">'+UI.modal.html+'</div></div>';document.getElementById('layer').innerHTML=h;}
 function toast(t){var el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=t;document.body.appendChild(el);setTimeout(function(){el.remove();},2600);}
 function mh(t,sub){return '<div class="mh"><div>'+(sub?'<div class="cap">'+sub+'</div>':'')+'<h2>'+t+'</h2></div><button class="x" data-act="closeModal" aria-label="Close">×</button></div>';}
 
@@ -596,24 +718,76 @@ if(!name){msg.innerHTML='<span style="color:var(--bad)">Enter the guest’s name
 var clash=S.bookings.find(function(b){return live(b)&&b.room===room&&b.in<out&&b.out>inD;});if(clash){msg.innerHTML='<span style="color:var(--bad)">'+R(room).name+' is taken by '+esc(G(clash.g).name)+' on those dates. Pick another room or date.</span>';return;}
 var gid='g'+(S.guests.length+1)+Date.now()%1000;S.guests.push({id:gid,name:name,nat:document.getElementById('nb_nat').value,doc:'Passport',no:'',dob:'',lang:document.getElementById('nb_nat').value==='THA'?'th':'en',phone:'',email:''});
 var id='MT-'+(1053+S.bookings.length);var total=0;for(var i=0;i<n;i++)total+=rateFor(R(room).type,addDays(inD,i));
-S.bookings.push({id:id,ref:id,g:gid,room:room,in:inD,out:out,ch:ch,status:'confirmed',adults:2,total:total,paid:0,form:'none',door:null,pay:null,notes:''});log('Ploy','New '+CH[ch].n+' booking · '+name+' · '+R(room).name);UI.modal=null;UI.drawer=id;paintLayer();render();toast('Booking '+id+' created');};
-A.openB=function(el){UI.drawer=el.dataset.id;UI.modal=null;paintLayer();};
-A.closeDrawer=function(){UI.drawer=null;paintLayer();};
+S.bookings.push({id:id,ref:id,g:gid,room:room,in:inD,out:out,ch:ch,status:'confirmed',adults:2,total:total,paid:0,form:'none',door:null,pay:null,notes:''});log('Ploy','New '+CH[ch].n+' booking · '+name+' · '+R(room).name);var nb=B(id);enrich(nb,S.bookings.length,S.guests);sync(nb);UI.modal=null;paintLayer();UI.bid=id;go('booking');toast('Booking '+id+' created');};
 A.closeModal=closeModal;
-A.checkin=function(el){var b=B(el.dataset.id);b.status='checked_in';if(!b.door){issue(b);}log('Ploy','Checked in '+G(b.g).name+' · '+R(b.room).name);paintLayer();render();toast('Checked in');};
-A.checkout=function(el){var b=B(el.dataset.id);b.status='checked_out';R(b.room).hk='dirty';log('Ploy','Checked out '+G(b.g).name+' · '+R(b.room).name+' marked dirty');paintLayer();render();toast('Checked out · housekeeping notified');};
-A.askCancel=function(el){modal(mh('Cancel this booking?')+'<p>'+esc(G(B(el.dataset.id).g).name)+' · '+R(B(el.dataset.id).room).name+'. The room opens up again on the board.</p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Keep booking</button><button class="btn danger" data-act="doCancel" data-id="'+el.dataset.id+'">Cancel booking</button></div>');};
-A.doCancel=function(el){var b=B(el.dataset.id);b.status='cancelled';log('Ploy','Cancelled '+b.id+' · '+G(b.g).name);UI.modal=null;paintLayer();render();toast('Booking cancelled');};
-function issue(b){var r=R(b.room);if(r.lock==='box'){b.door={code:r.boxCode,box:true,sent:now()};log('System','Key box '+r.box+' code sent to '+G(b.g).name);}else{b.door={code:rnd(4),sent:now()};log('System','Door code '+b.door.code+'# created on TTLock for '+r.name+' · '+G(b.g).name);}}
+/* booking detail actions */
+function cur(){return B(UI.bid);}
+function redraw(){render();paintLayer();}
+function clashFor(b,room,a,z){return S.bookings.find(function(x){return x!==b&&live(x)&&x.room===room&&x.in<z&&x.out>a;});}
+function rebuildRates(b){var per=b.rates.length?Math.round(b.rates.reduce(function(s,x){return s+x.r;},0)/b.rates.length):rateFor(R(b.room).type,b.in);b.rates=[];for(var d=b.in;d<b.out;d=addDays(d,1))b.rates.push({d:d,r:per});sync(b);}
+function addLeadOcc(b){var g=G(b.g);if(g.no&&!b.occ.some(function(o){return o.no===g.no;}))b.occ.unshift(occOf(g));}
+A.openB=function(el){UI.bid=el.dataset.id;UI.modal=null;paintLayer();go('booking');};
+A.closeDrawer=function(){};
+A.checkin=function(el){var b=B(el.dataset.id||UI.bid);b.status='checked_in';b.actualIn=fd(TODAY)+' '+now();if(!b.door)issue(b);log('Ploy','Checked in '+G(b.g).name+' · '+R(b.room).name+' · '+b.id);redraw();toast('Checked in');};
+A.checkout=function(el){var b=B(el.dataset.id||UI.bid);if(b.total-b.paid>0){UI.bid=b.id;modal(cashierHTML(b,'Settle the balance of '+baht(b.total-b.paid)+' before check-out.'),'wide');return;}b.status='checked_out';b.actualOut=fd(TODAY)+' '+now();R(b.room).hk='dirty';log('Ploy','Checked out '+G(b.g).name+' · '+R(b.room).name+' · '+b.id+' · room marked dirty');UI.modal=null;redraw();toast('Checked out · housekeeping notified');};
+A.undoIn=function(){var b=cur();b.status='confirmed';b.actualIn=null;if(b.door&&!b.door.box)b.door=null;log('Ploy','Undid check-in · '+b.id+' · door code cancelled');redraw();toast('Back to confirmed · door code cancelled');};
+A.undoOut=function(){var b=cur();b.status='checked_in';b.actualOut=null;log('Ploy','Undid check-out · '+b.id);redraw();toast('Back to checked in');};
+A.cashier=function(){modal(cashierHTML(cur()),'wide');};
+A.postPay=function(){var b=cur(),m=document.getElementById('cp_m').value,a=parseInt(document.getElementById('cp_a').value,10);if(!(a>0)){toast('Enter an amount');return;}b.payments.push({via:m,amount:a,at:fd(TODAY)+' '+now(),ref:m==='beam'?'pay.beamcheckout.com':m==='cash'?'Paid at desk':m==='transfer'?'Slip checked':'Card terminal'});sync(b);log(m==='beam'?'Beam':'Ploy','Payment '+baht(a)+' · '+PAYVIA[m]+' · '+b.id);UI.modal.html=cashierHTML(b);redraw();toast('Payment posted');};
+A.undoPay=function(){var b=cur(),p=b.payments.pop();sync(b);log('Ploy','Payment undone '+baht(p.amount)+' · '+b.id);redraw();toast('Payment removed · balance reopened');};
+var EMAILS={confirm:{TH:['ยืนยันการจอง','ขอบคุณที่จองห้องพักกับเรา'],EN:['Booking confirmation','Thank you for booking with us']},checkin:{TH:['อีเมลเช็คอิน · รหัสประตู','ข้อมูลเข้าที่พักของคุณ'],EN:['Check-in email · door code','Everything you need to get in']}};
+A.email=function(el){var b=cur(),k=el.dataset.k,l=el.dataset.l;b.emails.push({kind:EMAILS[k][l][0],lang:l,at:fd(TODAY)+' '+now(),st:'Delivered'});log('System',EMAILS[k][l][0]+' ('+l+') sent to '+G(b.g).name+' · '+b.id);redraw();toast('Email sent to '+(G(b.g).email||'the guest'));};
+A.viewEmail=function(el){var b=cur(),m=b.emails[+el.dataset.i],g=G(b.g),r=R(b.room),th=m.lang==='TH',ck=/door|เช็คอิน/i.test(m.kind);
+modal(mh(esc(m.kind),'To '+esc(g.email||g.name)+' · '+m.at)+'<div class="card" style="background:var(--well);gap:10px"><img src="emblem.png" alt="" style="height:34px;width:auto;align-self:flex-start"><b style="font-size:18px;font-weight:600">'+(th?'สวัสดีคุณ ':'Hi ')+esc(g.name.split(' ')[0])+'</b><span>'+(ck?(th?'ข้อมูลสำหรับเข้าที่พักของคุณ':'Here is everything you need to get in.'):(th?'การจองของคุณได้รับการยืนยันแล้ว':'Your booking is confirmed.'))+'</span>'+sr(th?'ห้อง':'Room',r.name)+sr(th?'เข้าพัก':'Stay',fd(b.in)+' → '+fd(b.out))+(ck&&b.door?sr(th?'รหัสประตู':'Door code','<span class="mono">'+b.door.code+(b.door.box?'':'#')+'</span>')+sr('Wi-Fi',esc(S.settings.wifi)):'')+'<a class="btn blue" style="align-self:flex-start" href="#" data-act="gvPass" data-id="'+b.id+'">'+(th?'เปิด Stay pass':'Open your stay pass')+'</a></div><button class="btn sec" data-act="closeModal">Close</button>','wide');};
+A.noShow=function(){var b=cur();b.status='no_show';b.door=null;log('Ploy','No show · '+G(b.g).name+' · '+b.id+' · room released, amount kept');redraw();toast('Marked no show · room released');};
+A.noShowFirst=function(){var b=cur();b.in=addDays(b.in,1);b.noShowFirst=true;log('Ploy','First night no-show · '+b.id+' · arrival moved to '+fd(b.in));redraw();toast('Arrival moved one night · amount kept');};
+A.cancelOpen=function(){var b=cur();modal(mh('Cancel '+b.id+'?',esc(G(b.g).name)+' · '+R(b.room).name)+'<div class="grid g2"><label class="chk" style="background:var(--well)"><input type="radio" name="cx" id="cx_l" value="CXL"> <span><b style="font-weight:500">CXL · cancelled by hotel</b><br><span class="cap">Overbooking, maintenance, our decision</span></span></label><label class="chk" style="background:var(--well)"><input type="radio" name="cx" id="cx_u" value="CXU" checked> <span><b style="font-weight:500">CXU · cancelled by guest</b><br><span class="cap">The guest or the OTA cancelled</span></span></label></div>'+fr('cx_r','Reason','<textarea id="cx_r" class="input" placeholder="e.g. Guest changed travel plans"></textarea>')+'<span class="cap">The room opens up again and the door code is cancelled. To return money, use Refund.</span><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" data-act="closeModal">Keep booking</button><button class="btn danger" data-act="doCancel">Cancel booking</button></div>');};
+A.doCancel=function(){var b=cur(),t=document.querySelector('input[name="cx"]:checked').value;b.status='cancelled';b.cxl={type:t,reason:document.getElementById('cx_r').value.trim()};b.door=null;log('Ploy','Cancelled '+b.id+' · '+t+' · '+G(b.g).name);UI.modal=null;redraw();toast('Booking cancelled · '+t);};
+A.restore=function(){var b=cur(),c=clashFor(b,b.room,b.in,b.out);if(c){toast(R(b.room).name+' is now taken by '+G(c.g).name+'. Move room first.');return;}b.status='confirmed';b.cxl=null;log('Ploy','Restored '+b.id+' to confirmed');redraw();toast('Booking restored');};
+A.refundOpen=function(){var b=cur();modal(mh('Refund '+b.id,esc(G(b.g).name)+' · received '+baht(b.paid))+'<div class="form">'+fr('rf_m','Refund by','<select id="rf_m" class="input"><option value="transfer">Bank transfer</option><option value="cash">Cash</option><option value="beam">Beam · back to card / PromptPay</option><option value="ota">Handled by the OTA</option></select>')+fr('rf_a','Amount to refund (฿)','<input id="rf_a" type="number" class="input num" value="'+b.paid+'">')+fr('rf_f','Cancellation fee kept (฿)','<input id="rf_f" type="number" class="input num" value="0">')+'</div><span class="cap">Refunding cancels the booking and records the money out in Accounting and Cash flow.</span><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" data-act="closeModal">Back</button><button class="btn danger" data-act="doRefund">Refund and cancel</button></div>');};
+A.doRefund=function(){var b=cur(),m=document.getElementById('rf_m').value,a=parseInt(document.getElementById('rf_a').value,10)||0,f=parseInt(document.getElementById('rf_f').value,10)||0,out=Math.max(0,a-f);b.payments.push({via:m,amount:-out,at:fd(TODAY)+' '+now(),ref:'Refund'+(f?' · fee kept '+baht(f):'')});sync(b);b.refunded=true;b.status='cancelled';b.cxl=b.cxl||{type:'CXU',reason:'Refunded'};b.door=null;S.expenses.unshift({date:TODAY,cat:'Refunds',desc:'Refund '+b.id+' · '+G(b.g).name,amt:out,slip:m!=='cash'});log('Ploy','Refunded '+baht(out)+' · '+b.id);UI.modal=null;redraw();toast('Refunded '+baht(out));};
+A.delOpen=function(){var b=cur();modal(mh('Delete '+b.id+' for good?')+'<p>This removes the booking, its folio and its emails. It cannot be undone. Cancel the booking instead if you want to keep the record.</p><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" data-act="closeModal">Keep it</button><button class="btn danger" data-act="doDelete">Delete booking</button></div>');};
+A.doDelete=function(){var b=cur();S.bookings=S.bookings.filter(function(x){return x!==b;});S.chats=S.chats.filter(function(c){return c.b!==b.id;});log('Ploy','Deleted booking '+b.id);UI.modal=null;UI.bid=null;paintLayer();go('bookings');toast('Booking deleted');};
+A.moveOpen=function(){var b=cur();modal(mh('Move room',b.id+' · '+fd(b.in)+' → '+fd(b.out))+S.rooms.map(function(r){var c=clashFor(b,r.id,b.in,b.out),ooo=r.ooo&&r.ooo.from<b.out&&r.ooo.to>b.in,cur0=r.id===b.room;return '<button class="conv" style="border:1px solid var(--line)"'+(c||ooo||cur0?' disabled':'')+' data-act="moveTo" data-id="'+r.id+'"><span class="av">'+r.id+'</span><span style="flex:1"><b style="font-weight:500;display:block">'+r.name+' · '+r.type+'</b><small class="cap">'+(cur0?'Current room':c?'Taken by '+esc(G(c.g).name):ooo?'Out of order':'Free for these dates')+'</small></span></button>';}).join('')+'<span class="cap">Moving cancels the door code. Issue a new one and Mounta reminds you to tell the guest.</span>');};
+A.moveTo=function(el){var b=cur(),to=el.dataset.id;log('Ploy','Moved '+G(b.g).name+' from '+R(b.room).name+' to '+R(to).name+' · '+b.id);b.room=to;b.door=null;UI.modal=null;redraw();toast('Moved to '+R(to).name+'. Issue a new code and tell the guest.');};
+A.regenLink=function(){var b=cur();b.token=Math.random().toString(36).slice(2,10);log('Ploy','New check-in link for '+b.id+' · old link stopped working');redraw();toast('New link created');};
+A.ttRandom=function(){var b=cur();if(b.door&&b.door.onLock)log('System','Old code '+b.door.code+'# removed from TTLock · '+R(b.room).name);b.door={code:rnd(6),onLock:true,sent:now()};b.codeStart=null;log('System','TTLock code '+b.door.code+'# created on '+R(b.room).name+' · '+b.id);redraw();toast('Code created on the lock · '+b.door.code+'#');};
+A.ttSet=function(){var b=cur(),c=(document.getElementById('bf_door').value||'').replace(/\D/g,'');if(c.length<4||c.length>9){toast('Type a code of 4 to 9 digits first');return;}b.door={code:c,onLock:true,sent:now()};log('System','Custom code '+c+'# set on TTLock '+R(b.room).name+' · '+b.id);redraw();toast('Code '+c+'# set on the lock');};
+A.reqToggle=function(el){var b=cur(),k=el.dataset.k,i=b.reqs.indexOf(k);if(i>=0)b.reqs.splice(i,1);else b.reqs.push(k);render();};
+A.feeAdd=function(){var b=cur(),f=FEES[+document.getElementById('feeSel').value],a=parseInt(document.getElementById('feeAmt').value,10);if(!(a>0))a=f[1];if(!(a>0)){toast('Enter the amount');return;}b.fees.push({n:f[0],a:a});sync(b);log('Ploy','Fee added · '+f[0]+' '+baht(a)+' · '+b.id);render();toast(f[0]+' added');};
+A.feeRm=function(el){var b=cur();b.fees.splice(+el.dataset.i,1);sync(b);render();};
+A.rateReset=function(){var b=cur(),t=R(b.room).type;b.rates.forEach(function(x){x.r=rateFor(t,x.d);});sync(b);render();toast('Rates reset to the channel rate');};
+A.rmOcc=function(el){var b=cur(),o=b.occ.splice(+el.dataset.i,1)[0];log('Ploy','Removed '+o.name+' from '+b.id);render();};
+var SAMPLE_OCC=[{name:'Olivia Brown',nat:'GBR',doc:'Passport',no:'561203984',dob:'1997-02-14',sex:'F'},{name:'Daniel Kim',nat:'KOR',doc:'Passport',no:'M50918273',dob:'1990-11-05',sex:'M'},{name:'Mei Ling Tan',nat:'SGP',doc:'Passport',no:'K1188203B',dob:'1994-07-21',sex:'F'}];
+A.addOccOpen=function(){UI.occDraft=null;modal(occForm());};
+function occForm(){var o=UI.occDraft||{name:'',nat:'',doc:'Passport',no:'',dob:'',sex:'F'};return mh('Add a guest','Take a photo of the passport or ID. Mounta reads it.')+'<div class="cam'+(UI.occScan?' scan':'')+'"><div class="pass"><i></i><span><em style="width:90%"></em><em style="width:70%"></em><em style="width:80%"></em></span></div><div class="line"></div></div><button class="btn blue" data-act="occScan"'+(UI.occScan?' disabled':'')+'>'+(UI.occScan?'Reading…':(UI.occDraft?'Take another photo':'Take photo'))+'</button>'+(UI.occDraft?'<span class="pill ok" style="align-self:flex-start">✓ Read automatically · check and save</span>':'')+'<div class="form">'+fr('oc_n','Full name','<input id="oc_n" class="input" value="'+esc(o.name)+'">')+fr('oc_t','Nationality','<input id="oc_t" class="input" value="'+esc(o.nat)+'">')+fr('oc_d','Document number','<input id="oc_d" class="input mono" value="'+esc(o.no)+'">')+fr('oc_b','Date of birth','<input id="oc_b" type="date" class="input" value="'+esc(o.dob)+'">')+fr('oc_s','Sex','<select id="oc_s" class="input"><option value="F"'+(o.sex==='F'?' selected':'')+'>Female</option><option value="M"'+(o.sex==='M'?' selected':'')+'>Male</option></select>')+'</div><div class="cap" id="oc_msg"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="occSave">Save guest</button></div>';}
+A.occScan=function(){UI.occScan=true;UI.modal.html=occForm();paintLayer();setTimeout(function(){UI.occScan=false;var b=cur();UI.occDraft=SAMPLE_OCC[(b.occ.length+b.id.length)%SAMPLE_OCC.length];if(UI.modal){UI.modal.html=occForm();paintLayer();}},1300);};
+A.occSave=function(){var b=cur(),o={name:document.getElementById('oc_n').value.trim(),nat:document.getElementById('oc_t').value.trim().toUpperCase(),doc:'Passport',no:document.getElementById('oc_d').value.trim(),dob:document.getElementById('oc_b').value,sex:document.getElementById('oc_s').value};var msg=document.getElementById('oc_msg');
+if(!o.name||!o.no){msg.innerHTML='<span style="color:var(--bad)">Name and document number are needed for TM30.</span>';return;}
+if(b.occ.some(function(x){return x.no===o.no;})){msg.innerHTML='<span style="color:var(--bad)">'+esc(o.name)+' is already registered on this booking. One person is registered once, so the TM30 file has no repeated name.</span>';return;}
+b.occ.push(o);log('Ploy','Registered '+o.name+' on '+b.id+' · passport read from photo');UI.modal=null;UI.occDraft=null;redraw();toast(o.name+' registered');};
+A.importOcc=function(){var b=cur(),pool=S.guests.filter(function(g){return g.no&&!b.occ.some(function(o){return o.no===g.no;});});modal(mh('Returning guest','Pick someone who has stayed before. Their passport details are copied.')+(pool.length?pool.map(function(g){return '<button class="conv" style="border:1px solid var(--line)" data-act="importPick" data-id="'+g.id+'"><span class="av">'+esc(g.name.slice(0,2))+'</span><span style="flex:1"><b style="font-weight:500;display:block">'+esc(g.name)+'</b><small class="cap mono">'+g.nat+' · '+esc(g.no)+'</small></span></button>';}).join(''):'<div class="empty">No other guests on file.</div>'));};
+A.importPick=function(el){var b=cur(),g=G(el.dataset.id);b.occ.push(occOf(g));log('Ploy','Imported returning guest '+g.name+' onto '+b.id);UI.modal=null;redraw();toast(g.name+' added');};
+A.bf=function(el){var b=cur(),f=el.dataset.bf,v=el.value;if(!b)return;
+if(f==='status'){var map={checked_in:'checkin',checked_out:'checkout'};if(map[v]){A[map[v]]({dataset:{id:b.id}});return;}if(v==='no_show'){A.noShow();return;}if(v==='cancelled'){A.cancelOpen();render();return;}if(v==='confirmed'){if(b.status==='cancelled'||b.status==='no_show'){A.restore();return;}b.status='confirmed';}render();return;}
+if(f==='in'||f==='out'){var a=f==='in'?v:b.in,z=f==='out'?v:b.out;if(!(a<z)){toast('Check-out must be after check-in');render();return;}var c=clashFor(b,b.room,a,z);if(c){toast(R(b.room).name+' is taken by '+G(c.g).name+' on those dates');render();return;}b.in=a;b.out=z;rebuildRates(b);log('Ploy','Dates changed · '+b.id+' · '+fd(a)+' → '+fd(z));render();toast('Dates updated · rates rebuilt');return;}
+if(f==='ch'){b.ch=v;if(v==='agent'&&!b.agent)b.agent={name:S.agents[0].name,contact:S.agents[0].contact,phone:'—',email:'—',voucher:'',rate:S.agents[0].disc,terms:'Monthly'};render();return;}
+if(f==='agentName'){var ag=S.agents.find(function(x){return x.name===v;});b.agent.name=v;b.agent.contact=ag.contact;b.agent.rate=ag.disc;render();return;}
+if(f==='voucher'){b.agent.voucher=v;return;}
+if(f==='plates'){b.plates=v.split(',').map(function(s){return s.trim();}).filter(Boolean);render();return;}
+if(f==='guestsN'){b.guestsN=Math.max(1,parseInt(v,10)||1);render();return;}
+if(f==='door'){var d=v.replace(/\D/g,'');b.door=d?{code:d,onLock:false}:null;render();return;}
+b[f]=v;toast('Saved');};
+A.gf=function(el){var g=G(cur().g);g[el.dataset.gf]=el.value;toast('Saved');};
+A.rate=function(el){var b=cur();b.rates[+el.dataset.rate].r=Math.max(0,parseInt(el.value,10)||0);sync(b);render();};
+
+function issue(b){var r=R(b.room);if(b.emails)b.emails.push({kind:'Check-in email · door code',lang:G(b.g).lang==='th'?'TH':'EN',at:fd(TODAY)+' '+now(),st:'Delivered'});if(r.lock==='box'){b.door={code:r.boxCode,box:true,sent:now()};log('System','Key box '+r.box+' code sent to '+G(b.g).name);}else{b.door={code:rnd(6),onLock:true,sent:now()};log('System','Door code '+b.door.code+'# created on TTLock for '+r.name+' · '+G(b.g).name);}}
 A.issueCode=function(el){var b=B(el.dataset.id);issue(b);paintLayer();render();toast(R(b.room).lock==='ttlock'?'New code created on TTLock and sent':'Box code sent to guest');};
 A.sendLink=function(el){var b=B(el.dataset.id);b.form='sent';log('System','Check-in link sent to '+G(b.g).name);paintLayer();render();toast('Check-in link sent by email and chat');};
-A.payLink=function(el){var b=B(el.dataset.id);b.pay='https://pay.beamcheckout.com/mounta/'+b.id.toLowerCase()+'-'+rnd(5);log('Ploy','Beam payment link created for '+b.id+' · '+baht(bal(b)));paintLayer();toast('Payment link created');};
-A.markPaid=function(el){var b=B(el.dataset.id);log('Beam','Payment received '+baht(bal(b))+' · '+b.id);b.paid=b.total;b.pay=null;paintLayer();render();toast('Payment received via Beam');};
-A.moveRoom=function(el){var b=B(el.dataset.id),to=el.value;var clash=S.bookings.find(function(x){return x!==b&&live(x)&&x.room===to&&x.in<b.out&&x.out>b.in;});if(clash){toast(R(to).name+' is taken on those dates');paintLayer();return;}log('Ploy','Moved '+G(b.g).name+' from '+R(b.room).name+' to '+R(to).name);b.room=to;if(b.door){b.door=null;}paintLayer();render();toast('Moved. Issue a new code for the new room.');};
 A.copy=function(el){var v=el.dataset.v;try{navigator.clipboard.writeText(v).then(function(){toast('Copied');},function(){toast(v);});}catch(e){toast(v);}};
 A.bFilter=function(el){UI.bFilter=el.dataset.v;render();};
 A.calPrev=function(){UI.calStart-=7;render();};A.calNext=function(){UI.calStart+=7;render();};A.calToday=function(){UI.calStart=0;render();};
-A.chatSel=function(el){UI.chat=el.dataset.id;UI.drawer=null;paintLayer();go('chat');};
+A.chatSel=function(el){if(!S.chats.some(function(c){return c.b===el.dataset.id;}))S.chats.unshift({b:el.dataset.id,unread:0,m:[]});UI.chat=el.dataset.id;UI.drawer=null;paintLayer();go('chat');};
 A.qr=function(el){document.getElementById('msgIn').value=QR[el.dataset.k].th;document.getElementById('msgIn').dataset.k=el.dataset.k;document.getElementById('msgIn').focus();};
 A.send=function(){var inp=document.getElementById('msgIn'),t=inp.value.trim();if(!t)return;var c=S.chats.find(function(x){return x.b===UI.chat;}),g=G(B(c.b).g);var k=inp.dataset.k,tr=k&&QR[k].th===t?QR[k][g.lang==='th'?'en':g.lang]:t;c.m.push({f:'me',t:t,tr:tr,at:now()});log('Ploy','Replied to '+g.name);render();
 setTimeout(function(){var th=THANKS[g.lang]||THANKS.en;c.m.push({f:'g',t:th[0],tr:th[1],at:now()});if(UI.route==='chat')render();},1600);};
@@ -653,14 +827,14 @@ A.repTab=function(el){UI.repTab=el.dataset.v;render();};
 A.gvCheckin=function(el){UI.drawer=null;gvCheckin(el.dataset.id);};
 A.gvNext=function(){GV.step++;GV.read=false;paintGv();};
 A.gvScan=function(){GV.scanning=true;paintGv();setTimeout(function(){GV.scanning=false;GV.read=true;if(UI.modal)paintGv();},1400);};
-A.gvConfirm=function(){var all=Array.prototype.every.call(document.querySelectorAll('[data-rule]'),function(c){return c.checked;});if(!all){document.getElementById('ruleMsg').textContent='Tick every rule to continue.';return;}var b=B(GV.b);b.form='done';if(!b.door)issue(b);log(G(b.g).name,'Completed online check-in · passport read from photo');GV.step=3;paintGv();render();};
+A.gvConfirm=function(){var all=Array.prototype.every.call(document.querySelectorAll('[data-rule]'),function(c){return c.checked;});if(!all){document.getElementById('ruleMsg').textContent='Tick every rule to continue.';return;}var b=B(GV.b);b.form='done';addLeadOcc(b);if(!b.door)issue(b);log(G(b.g).name,'Completed online check-in · passport read from photo');GV.step=3;paintGv();render();};
 A.gvPass=function(el){UI.drawer=null;gvPass(el.dataset.id);};
 A.gvReq=function(el){var b=B(el.dataset.id);S.requests.unshift({room:b.room,what:el.dataset.w,at:now(),done:false});log(G(b.g).name,'Requested '+el.dataset.w.toLowerCase()+' from stay pass');render();toast('Request sent to housekeeping');};
 A.gvMsg=function(el){var b=B(el.dataset.id),c=S.chats.find(function(x){return x.b===b.id;});if(!c){c={b:b.id,unread:0,m:[]};S.chats.unshift(c);}c.m.push({f:'g',t:'Hello! Where can I buy a SIM card nearby?',tr:'สวัสดี ซื้อซิมการ์ดใกล้ๆ ได้ที่ไหน',at:now()});c.unread++;render();toast('Message sent · see Chat');};
 A.gvKiosk=function(){gvKiosk();};
 A.kWalk=function(){KS.step=1;paintKiosk();};A.kHave=function(){KS.step=4;paintKiosk();};A.kBack=function(){KS.step=0;paintKiosk();};
 A.kRoom=function(el){KS.room=el.dataset.id;KS.step=2;paintKiosk();};
-A.kPaid=function(){var r=R(KS.room),gid='gk'+Date.now()%10000,id='MT-'+(1053+S.bookings.length);S.guests.push({id:gid,name:'Walk-in guest',nat:'THA',doc:'Thai ID',no:'',dob:'',lang:'th',phone:'',email:''});var b={id:id,ref:id,g:gid,room:r.id,in:TODAY,out:D(1),ch:'direct',status:'checked_in',adults:1,total:rateFor(r.type,TODAY),paid:rateFor(r.type,TODAY),form:'none',door:null,pay:null,notes:'Walk-in at kiosk'};S.bookings.push(b);issue(b);KS.code=b.door.code;log('Kiosk','Walk-in booked '+r.name+' · paid by PromptPay');KS.step=3;paintKiosk();render();};
+A.kPaid=function(){var r=R(KS.room),gid='gk'+Date.now()%10000,id='MT-'+(1053+S.bookings.length);S.guests.push({id:gid,name:'Walk-in guest',nat:'THA',doc:'Thai ID',no:'',dob:'',lang:'th',phone:'',email:''});var b={id:id,ref:id,g:gid,room:r.id,in:TODAY,out:D(1),ch:'direct',status:'checked_in',adults:1,total:rateFor(r.type,TODAY),paid:rateFor(r.type,TODAY),form:'none',door:null,pay:null,notes:'Walk-in at kiosk'};S.bookings.push(b);enrich(b,S.bookings.length,S.guests);sync(b);issue(b);KS.code=b.door.code;log('Kiosk','Walk-in booked '+r.name+' · paid by PromptPay');KS.step=3;paintKiosk();render();};
 A.kDone=function(){closeModal();};
 A.kFind=function(){var q=document.getElementById('kq').value.trim().toLowerCase();var b=q&&S.bookings.find(function(x){return live(x)&&x.in===TODAY&&(G(x.g).name.toLowerCase().indexOf(q)>=0||x.id.toLowerCase()===q);});document.getElementById('kres').innerHTML=b?'<div class="card"><b style="font-weight:600">'+esc(G(b.g).name)+' · '+R(b.room).name+'</b><span class="cap">'+fd(b.in)+' → '+fd(b.out)+'</span><button class="btn blue" style="align-self:flex-start" data-act="kCheck" data-id="'+b.id+'">Check in now</button></div>':'<div class="empty">No arrival today matches. Try สมชาย or MT-1044.</div>';};
 A.kCheck=function(el){var b=B(el.dataset.id);b.status='checked_in';if(!b.door)issue(b);KS.room=b.room;KS.code=b.door.code;log('Kiosk','Checked in '+G(b.g).name);KS.step=3;paintKiosk();render();};
@@ -683,13 +857,14 @@ if(el.tagName==='SELECT')return;
 if(el.dataset.go){go(el.dataset.go);return;}
 var f=A[el.dataset.act];if(f){e.preventDefault();f(el);}});
 document.addEventListener('change',function(e){var el=e.target;var k=el.dataset.change;if(!k)return;
-if(k==='bCh'){UI.bCh=el.value;render();}if(k==='hkBy'){R(el.dataset.id).hkBy=el.value;}if(k==='psrc'){S.payout.src=el.value;S.payout.rows=null;render();}if(k==='moveRoom')A.moveRoom(el);});
+if(k==='bCh'){UI.bCh=el.value;render();}if(k==='hkBy'){R(el.dataset.id).hkBy=el.value;}if(k==='psrc'){S.payout.src=el.value;S.payout.rows=null;render();}});
+document.addEventListener('change',function(e){var el=e.target;if(el.dataset.bf)A.bf(el);else if(el.dataset.gf)A.gf(el);else if(el.dataset.rate!==undefined)A.rate(el);});
 document.addEventListener('input',function(e){var el=e.target;if(el.id==='q'){UI.q=el.value;if(UI.route!=='bookings'&&UI.route!=='guests')UI.route='bookings';render();el.focus();}if(el.dataset.input==='counted'){S.audit.counted=el.value.replace(/[^0-9]/g,'');var v=S.audit.counted===''?null:Number(S.audit.counted)-6200;document.getElementById('variance').innerHTML=v===null?'Count the drawer and enter the amount.':v===0?'<span style="color:var(--ok)">Matches expected cash.</span>':'<span style="color:var(--bad)">Variance '+(v>0?'+':'−')+baht(Math.abs(v))+'</span>';}});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(UI.modal)closeModal();else if(UI.drawer)A.closeDrawer();}if(e.key==='Enter'&&e.target.id==='msgIn')A.send();if(e.key==='Enter'&&e.target.id==='kq')A.kFind();});
 document.getElementById('burger').addEventListener('click',A.menu);
 document.getElementById('sideScrim').addEventListener('click',function(){document.getElementById('side').classList.remove('open');this.classList.remove('open');});
 window.addEventListener('hashchange',function(){var r=location.hash.slice(1);if(r&&r!==UI.route&&P[r])go(r);});
-var start=location.hash.slice(1);go(P[start]?start:'overview');
+var start=location.hash.slice(1);if(start==='booking')start='bookings';go(P[start]?start:'overview');
 })();
 </script>
 </body>
