@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mounta Demo</title>
+<link rel="icon" href="emblem.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Layout: the Admin V2 shell (floating white sidebar on a cool ground, soft cards, ink for selection, blue for the action that matters) in Mounta colors. Light, single theme by choice: it mirrors the real product. */
+:root{
+  --ink:#0D294A; --blue:#1774ED; --sky:#5CBBFF;
+  --ground:#F1F5FA; --well:#F4F7FB; --card:#FFFFFF;
+  --line:#E2E9F2; --line2:#EBF0F6; --muted:#5B6B82; --soft:#8497B0;
+  --act-bg:#E3F0FF; --act:#0958AE;
+  --ok:#2E7D4F; --ok-bg:#DDF3E6; --warn:#8A5A12; --warn-bg:#FFF0D6; --bad:#B42335; --bad-bg:#FDE4E7;
+  --ff:'Geist','Noto Sans Thai',-apple-system,'Helvetica Neue',sans-serif;
+  --mono:'Geist Mono','Noto Sans Thai',ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--ff);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid rgba(23,116,237,.35);outline-offset:1px;border-radius:10px}
+h1,h2,h3,h4{margin:0;font-weight:500}
+p{margin:0}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+
+.shell{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100%}
+.side{position:sticky;top:16px;height:calc(100vh - 32px);margin:16px 0 16px 16px;background:var(--card);border-radius:28px;padding:20px 14px 16px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.logo{display:flex;align-items:center;gap:10px;padding:2px 10px 4px}
+.logo img{height:30px;width:auto}
+.logo b{display:block;font-weight:600;letter-spacing:.14em;font-size:15px}
+.logo small{display:block;color:var(--muted);font-size:12px}
+.prop{display:flex;align-items:center;gap:10px;background:var(--well);border-radius:22px;padding:10px 14px 10px 10px}
+.badge{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.nav{display:flex;flex-direction:column;gap:2px}
+.ni{display:flex;align-items:center;gap:12px;min-height:40px;padding:0 14px;border-radius:999px;border:0;background:none;text-align:left;cursor:pointer;width:100%;font-size:14px}
+.ni:hover{background:var(--well)}
+.ni svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ni.on{background:var(--ink);color:#fff}
+.ni.on svg{stroke:#fff}
+.ni .cnt{margin-left:auto;min-width:20px;height:20px;border-radius:10px;background:var(--blue);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 6px}
+.grp{font-size:12px;color:var(--muted);padding:4px 14px 2px}
+.div{height:1px;background:var(--line2);margin:8px 6px}
+.status{background:var(--well);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.status .mono{font-size:11px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+
+.top{height:80px;padding:0 28px;display:flex;align-items:center;gap:12px}
+.crumb{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb span{color:var(--muted)}
+.search{flex:0 1 300px;min-width:0;height:44px;border-radius:999px;border:0;background:var(--card);padding:0 18px}
+.icb{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;cursor:pointer;flex:none;position:relative}
+.icb svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round}
+.icb .cnt{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;border-radius:9px;background:var(--blue);color:#fff;font-size:10px;display:grid;place-items:center}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px;flex:none}
+.burger{display:none}
+.demo{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;background:var(--act-bg);color:var(--act);font-size:12px;font-weight:500;white-space:nowrap}
+.demo button{border:0;background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:12px}
+
+.content{padding:4px 28px 40px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.ph{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.ph .lb{font-size:14px;color:var(--muted)}
+.ph h1{font-size:34px;font-weight:400;letter-spacing:-.025em;line-height:1.15}
+.ph h1 i{font-style:normal;color:var(--soft)}
+.ph .sub{font-size:15px;color:var(--muted);margin-top:4px}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:999px;border:0;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;background:var(--ink);color:#fff;text-decoration:none}
+.btn:hover{background:#000}
+.btn.sec{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1px #D2DCE8}
+.btn.sec:hover{background:var(--well)}
+.btn.blue{background:var(--blue)}
+.btn.blue:hover{background:#0F5FCC}
+.btn.sm{min-height:34px;padding:0 14px;font-size:13px}
+.btn.ghost{background:none;color:var(--ink)}
+.btn.ghost:hover{background:var(--well)}
+.btn.danger{background:var(--card);color:var(--bad);box-shadow:inset 0 0 0 1px #F3C2C9}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.stat{background:var(--card);border-radius:24px;padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.stat .l{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.stat .v{font-size:32px;letter-spacing:-.025em;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--muted)}
+.card{background:var(--card);border-radius:28px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card .card,.well{background:var(--well);border-radius:20px}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ch h3{font-size:15px;font-weight:500}
+.cap{font-size:12px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap;background:var(--well);color:var(--ink)}
+.pill.ink{background:var(--ink);color:#fff}
+.pill.act{background:var(--act-bg);color:var(--act)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.out{background:none;color:var(--muted);box-shadow:inset 0 0 0 1px #D2DCE8}
+.ab{background:#FFE3E6;color:#A1162B}.bc{background:#DDE8FF;color:#123C99}.ag{background:#E9E1FF;color:#4B2A9E}.tc{background:#DAF1F8;color:#0E5D78}.dr{background:var(--act-bg);color:var(--act)}.at{background:#FFF0D6;color:#8A5A12}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px}
+.seg button{border:0;background:none;border-radius:999px;min-height:34px;padding:0 14px;font-size:13px;cursor:pointer}
+.seg button.on{background:var(--ink);color:#fff}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;font-weight:500;font-size:12px;color:var(--muted);padding:0 12px 10px 0;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:11px 12px 11px 0;border-bottom:1px solid var(--line2);white-space:nowrap;vertical-align:middle}
+tr.click{cursor:pointer}
+tr.click:hover td{background:#FAFBFD}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line2)}
+.row:last-child{border-bottom:0}
+.row .g{flex:1;min-width:0}
+.row .g b{font-weight:500;display:block}
+.row .g small{color:var(--muted);font-size:12px}
+.lg{display:flex;align-items:center;gap:10px;font-size:13px}
+.input,select.input,textarea.input{width:100%;border:1px solid #DCE4EE;border-radius:14px;padding:11px 14px;background:var(--card)}
+textarea.input{resize:vertical;min-height:90px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.code{font-family:var(--mono);font-size:30px;letter-spacing:.16em;font-weight:500}
+.switch{position:relative;width:40px;height:24px;border-radius:12px;background:#D2DCE8;border:0;cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.switch[aria-checked="true"]{background:var(--blue)}
+.switch[aria-checked="true"]::after{left:19px}
+
+/* room board */
+.board{display:grid;gap:5px 3px;font-size:12px;min-width:860px}
+.board .d{text-align:center;color:var(--muted);font-size:11.5px;line-height:1.25;padding-bottom:4px}
+.board .d.today{color:var(--ink);font-weight:600}
+.board .r{font-weight:500;align-self:center;font-size:13px}
+.board .r small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+.board .cell{border-radius:8px;background:var(--well);border:0;cursor:pointer;min-height:38px}
+.board .cell:hover{background:#E8EEF6}
+.board .cell.today{box-shadow:inset 0 0 0 1.5px var(--sky)}
+.board .bk{border:0;border-radius:9px;padding:0 10px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;cursor:pointer;min-height:38px;z-index:1}
+.board .bk.in{box-shadow:inset 3px 0 0 currentColor}
+.board .bk.ooo{background:repeating-linear-gradient(45deg,#E2E9F2 0 6px,#EEF2F7 6px 12px);color:var(--muted)}
+
+/* drawer, modal, toast */
+.scrim{position:fixed;inset:0;background:rgba(13,41,74,.28);z-index:40;display:flex;justify-content:flex-end}
+.drawer{width:min(480px,100%);height:100%;background:var(--ground);padding:16px;overflow:auto;display:flex;flex-direction:column;gap:12px;box-shadow:-20px 0 60px -20px rgba(13,41,74,.35)}
+.scrim.center{justify-content:center;align-items:center;padding:16px}
+.modal{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--card);border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.modal.wide{width:min(820px,100%)}
+.modal.bare{background:none;padding:0;width:auto;overflow:visible;align-items:center}
+.mh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mh h2{font-size:22px;letter-spacing:-.02em}
+.x{width:40px;height:40px;border-radius:50%;border:0;background:var(--well);cursor:pointer;font-size:18px;flex:none}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;z-index:60;font-size:14px;box-shadow:0 14px 34px -10px rgba(13,41,74,.5);max-width:calc(100% - 32px)}
+pre.csv{margin:0;background:var(--well);border-radius:16px;padding:14px;font-family:var(--mono);font-size:12px;overflow:auto;max-height:260px}
+
+/* phone & tablet for guest views */
+.phone{width:320px;max-width:calc(100vw - 32px);height:640px;max-height:calc(100vh - 90px);background:var(--ground);border:10px solid #06162A;border-radius:46px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 80px -20px rgba(0,0,0,.45)}
+.phone .notch{height:30px;display:flex;justify-content:center;align-items:center;flex:none}
+.phone .notch i{width:88px;height:20px;border-radius:12px;background:#06162A}
+.phone .scr{flex:1;overflow:auto;padding:6px 16px 18px;display:flex;flex-direction:column;gap:12px}
+.tablet{width:760px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 90px);background:var(--ground);border:14px solid #06162A;border-radius:34px;overflow:auto;padding:28px;display:flex;flex-direction:column;gap:18px}
+.gv-close{margin-top:12px}
+.cam{position:relative;height:190px;border-radius:18px;background:#0A1E38;display:grid;place-items:center;overflow:hidden}
+.pass{width:72%;height:62%;border-radius:10px;background:#F4F7FB;display:grid;grid-template-columns:34% 1fr;gap:8px;padding:10px}
+.pass i{border-radius:6px;background:#CFE3F7}
+.pass span{display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.pass em{height:6px;border-radius:3px;background:#C9D4E3}
+.cam .line{position:absolute;left:10%;right:10%;height:2px;background:var(--sky);box-shadow:0 0 12px 2px rgba(92,187,255,.8);top:10%;display:none}
+.cam.scan .line{display:block;animation:scan 1.1s ease-in-out infinite}
+@keyframes scan{50%{top:84%}}
+.chk{display:flex;gap:10px;align-items:center;padding:12px;border-radius:14px;background:var(--card);cursor:pointer;font-size:13px}
+.chk input{width:18px;height:18px;accent-color:var(--blue)}
+
+/* chat */
+.chat{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;min-height:560px}
+.convs{background:var(--card);border-radius:28px;padding:10px;display:flex;flex-direction:column;gap:2px}
+.conv{display:flex;gap:10px;align-items:center;padding:10px;border-radius:18px;border:0;background:none;text-align:left;cursor:pointer;width:100%}
+.conv:hover{background:var(--well)}
+.conv.on{background:var(--well)}
+.av{width:40px;height:40px;border-radius:50%;background:#E2E9F2;display:grid;place-items:center;font-size:13px;font-weight:500;flex:none}
+.thread{background:var(--card);border-radius:28px;display:flex;flex-direction:column;min-width:0}
+.thread .hd{padding:16px 20px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.msgs{flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:440px}
+.bub{max-width:72%;padding:10px 14px;border-radius:18px 18px 18px 6px;background:var(--well);font-size:14px}
+.bub.me{align-self:flex-end;border-radius:18px 18px 6px 18px;background:var(--ink);color:#fff}
+.bub small{display:block;margin-top:6px;padding-top:6px;border-top:1px solid rgba(91,107,130,.25);font-size:12px;opacity:.8}
+.bub .t{display:block;font-size:11px;opacity:.6;margin-top:4px}
+.composer{padding:12px 16px 16px;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:10px}
+.qr{display:flex;gap:6px;flex-wrap:wrap}
+.qr button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+
+/* charts */
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{fill:var(--muted);font-family:var(--mono);font-size:10px}
+
+/* rr3 card */
+.rr3{border:1.5px solid var(--ink);border-radius:8px;padding:18px;font-size:13px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 20px;background:#fff}
+.rr3 .full{grid-column:1/-1}
+.rr3 span{display:block;font-size:11px;color:var(--muted)}
+
+/* mobile */
+.tabbar{display:none}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:280px;height:100%;margin:0;border-radius:0 28px 28px 0;z-index:50;transform:translateX(-105%);transition:transform .2s;box-shadow:20px 0 60px -20px rgba(13,41,74,.4)}
+  .side.open{transform:none}
+  .burger{display:grid}
+  .top{height:64px;padding:0 14px;position:sticky;top:0;z-index:20;background:rgba(241,245,250,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .search,.top .demo{display:none}
+  .content{padding:4px 14px 110px}
+  .ph h1{font-size:28px}
+  .chat{grid-template-columns:1fr}
+  .tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--card);border-radius:999px;padding:5px;box-shadow:0 14px 34px -10px rgba(13,41,74,.35)}
+  .tabbar button{border:0;background:none;border-radius:999px;min-height:48px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+  .tabbar button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+  .tabbar button.on{background:var(--ink);color:#fff}
+  .demo-m{display:flex!important}
+}
+.demo-m{display:none;margin:0 0 4px}
+.side-scrim{display:none}
+@media (max-width:900px){.side-scrim.open{display:block;position:fixed;inset:0;background:rgba(13,41,74,.28);z-index:45}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="side-scrim" id="sideScrim"></div>
+<aside class="side" id="side">
+<a class="logo" href="../" style="text-decoration:none;color:inherit" title="Back to mounta website"><img src="emblem.png" alt=""><div><b>MOUNTA</b><small>Cloud PMS · admin</small></div></a>
+<div class="prop"><div class="badge">BD</div><div style="flex:1;min-width:0"><div style="font-weight:600">Baan Doi Loft</div><div class="cap">6 rooms · Chiang Mai</div></div></div>
+<nav class="nav" id="nav" aria-label="Main"></nav>
+<div class="status"><div style="display:flex;align-items:center;gap:8px;font-weight:500"><span class="dot" style="background:var(--ok)"></span>All systems normal</div><div class="mono">OTA SYNC · 4 CHANNELS</div><div class="mono" id="lockStatus">LOCKS · 4 ONLINE</div></div>
+</aside>
+
+<div style="min-width:0">
+<header class="top">
+<button class="icb burger" id="burger" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+<div class="crumb" id="crumb"></div>
+<label for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search</label>
+<input id="q" class="search" type="search" placeholder="Search guests, bookings, rooms">
+<span class="demo">Demo · sample data <button type="button" data-act="reset">Reset</button></span>
+<button class="icb" data-go="chat" aria-label="Chat"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="cnt" id="bell">3</span></button>
+<div class="avatar">PL</div>
+</header>
+<main class="content" id="main"></main>
+</div>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Quick"></nav>
+<div id="layer"></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- helpers ---------- */
+var TODAY='2026-10-27';
+function addDays(s,n){var d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function D(n){return addDays(TODAY,n);}
+function diff(a,b){return Math.round((new Date(b+'T00:00:00Z')-new Date(a+'T00:00:00Z'))/864e5);}
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fd(s){var d=new Date(s+'T00:00:00Z');return d.getUTCDate()+' '+MON[d.getUTCMonth()];}
+function fdw(s){var d=new Date(s+'T00:00:00Z');return DOW[d.getUTCDay()]+' '+d.getUTCDate()+' '+MON[d.getUTCMonth()];}
+function baht(n){return '฿'+Math.round(n).toLocaleString('en-US');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function rnd(n){var s='';for(var i=0;i<n;i++)s+=Math.floor(Math.random()*10);return s;}
+function now(){var d=new Date();return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
+var ICON={
+home:'<path d="M4 11l8-7 8 7v9H4z"/>',board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>',bed:'<path d="M3 18v-6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v6M3 14h18M7 9V6h4v3"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',chat:'<path d="M4 5h16v11H8l-4 4z"/>',money:'<rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',clean:'<path d="M7 21h10M12 17V3M5 10l7-7 7 7"/>',wash:'<rect x="5" y="3" width="14" height="18" rx="3"/><circle cx="12" cy="13" r="4"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',phone:'<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',tablet:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M11 17h2"/>',bank:'<path d="M3 10l9-6 9 6M5 10v8M19 10v8M9 10v8M15 10v8M3 20h18"/>',more:'<path d="M4 7h16M4 12h16M4 17h16"/>'};
+function ic(n){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>';}
+var CH={airbnb:{n:'Airbnb',c:'ab',fee:.15},booking:{n:'Booking.com',c:'bc',fee:.15},agoda:{n:'Agoda',c:'ag',fee:.17},trip:{n:'Trip.com',c:'tc',fee:.15},direct:{n:'Direct',c:'dr',fee:0},agent:{n:'Agent',c:'at',fee:.1}};
+
+/* ---------- data ---------- */
+function seed(){
+var rooms=[
+{id:'L1',name:'Loft 1',type:'Loft',cap:2,lock:'ttlock',battery:82,hk:'dirty',hkBy:'Noi'},
+{id:'L2',name:'Loft 2',type:'Loft',cap:2,lock:'ttlock',battery:64,hk:'clean',hkBy:'Noi'},
+{id:'G1',name:'Garden 1',type:'Garden',cap:3,lock:'box',box:'3',boxCode:'7720',hk:'inspected',hkBy:'Fon'},
+{id:'G2',name:'Garden 2',type:'Garden',cap:3,lock:'box',box:'4',boxCode:'1958',hk:'dirty',hkBy:'Fon'},
+{id:'S3',name:'Studio 3',type:'Studio',cap:2,lock:'ttlock',battery:91,hk:'cleaning',hkBy:'Noi'},
+{id:'S4',name:'Studio 4',type:'Studio',cap:2,lock:'ttlock',battery:18,hk:'ooo',hkBy:'Fon',ooo:{from:D(-1),to:D(2),why:'Aircon repair'}}];
+var guests=[
+{id:'g1',name:'Emma Wilson',nat:'GBR',doc:'Passport',no:'534198271',dob:'1994-03-12',lang:'en',phone:'+44 7700 900123',email:'emma.w@example.com'},
+{id:'g2',name:'Li Wei',nat:'CHN',doc:'Passport',no:'E90812344',dob:'1990-07-02',lang:'zh',phone:'+86 138 0000 1234',email:'liwei@example.com'},
+{id:'g3',name:'สมชาย ใจดี',nat:'THA',doc:'Thai ID',no:'1-1020-00456-78-9',dob:'1985-11-20',lang:'th',phone:'081 234 5678',email:'somchai@example.com'},
+{id:'g4',name:'Kenji Sato',nat:'JPN',doc:'Passport',no:'TK4127755',dob:'1988-01-30',lang:'ja',phone:'+81 90 1234 5678',email:'kenji@example.com'},
+{id:'g5',name:'Anna Kowalski',nat:'POL',doc:'Passport',no:'EK3390211',dob:'1996-05-14',lang:'en',phone:'+48 600 100 200',email:'anna.k@example.com'},
+{id:'g6',name:'Park Jiho',nat:'KOR',doc:'Passport',no:'M77210931',dob:'1993-09-09',lang:'ko',phone:'+82 10 1234 5678',email:'jiho@example.com'},
+{id:'g7',name:'Chen Yu',nat:'TWN',doc:'Passport',no:'358120044',dob:'1991-12-01',lang:'zh',phone:'+886 912 345 678',email:'chenyu@example.com'},
+{id:'g8',name:'Lucas Martin',nat:'FRA',doc:'Passport',no:'19FR88213',dob:'1987-04-22',lang:'en',phone:'+33 6 12 34 56 78',email:'lucas.m@example.com'},
+{id:'g9',name:'Tom Richards',nat:'AUS',doc:'Passport',no:'PA8812093',dob:'1979-08-17',lang:'en',phone:'+61 412 345 678',email:'tom.r@example.com'},
+{id:'g10',name:'Siti Rahman',nat:'MYS',doc:'Passport',no:'A41208812',dob:'1995-02-25',lang:'en',phone:'+60 12 345 6789',email:'siti.r@example.com'},
+{id:'g11',name:'Nguyen Van An',nat:'VNM',doc:'Passport',no:'C8812044',dob:'1992-06-06',lang:'en',phone:'+84 90 123 4567',email:'an.nguyen@example.com'},
+{id:'g12',name:'Sophie Müller',nat:'DEU',doc:'Passport',no:'C4F8KL91',dob:'1998-10-03',lang:'en',phone:'+49 151 2345 6789',email:'sophie.m@example.com'},
+{id:'g13',name:'Mark Evans',nat:'GBR',doc:'Passport',no:'',dob:'',lang:'en',phone:'',email:'mark.e@example.com'},
+{id:'g14',name:'Ploy Srisuk',nat:'THA',doc:'Thai ID',no:'',dob:'',lang:'th',phone:'089 111 2233',email:''}];
+function bk(id,g,room,a,b,ch,status,rate,extra){var n=diff(D(a),D(b));var o={id:id,ref:ch==='direct'?id:(ch==='agent'?'HYT-'+id.slice(-3):({airbnb:'HM',booking:'BK',agoda:'AG',trip:'TR'}[ch])+id.slice(-4)),g:g,room:room,in:D(a),out:D(b),ch:ch,status:status,adults:2,total:rate*n,paid:0,form:'none',door:null,pay:null,notes:''};for(var k in extra)o[k]=extra[k];return o;}
+var bookings=[
+bk('MT-1031','g8','L1',-3,0,'airbnb','checked_out',1600,{paid:'all',form:'done'}),
+bk('MT-1029','g11','S3',-4,0,'booking','checked_out',1200,{paid:'all',form:'done'}),
+bk('MT-1033','g10','G2',-2,0,'agoda','checked_in',1400,{paid:'all',form:'done',door:{code:'1958',box:true}}),
+bk('MT-1042','g1','L2',0,3,'airbnb','checked_in',1600,{paid:'all',form:'done',door:{code:'4821',sent:'13:02'},notes:'Arriving around 23:00, extra towel please'}),
+bk('MT-1043','g2','G1',0,2,'booking','checked_in',1400,{paid:'all',form:'done',door:{code:'7720',box:true,sent:'12:40'}}),
+bk('MT-1044','g3','L1',0,2,'airbnb','confirmed',1600,{paid:'all',form:'done'}),
+bk('MT-1045','g4','S3',0,5,'direct','confirmed',1200,{paid:3000,form:'none'}),
+bk('MT-1046','g6','G2',1,4,'agoda','confirmed',1400,{paid:'all',form:'sent'}),
+bk('MT-1047','g5','L1',2,6,'booking','confirmed',1600,{paid:'all',form:'none'}),
+bk('MT-1048','g12','S4',3,6,'airbnb','confirmed',1200,{paid:'all',form:'none'}),
+bk('MT-1049','g7','G1',3,5,'trip','confirmed',1400,{paid:'all',form:'none'}),
+bk('MT-1050','g9','L2',4,7,'direct','confirmed',1600,{paid:0,form:'none'}),
+bk('MT-1051','g14','S3',6,8,'agent','confirmed',1200,{paid:0,form:'none'}),
+bk('MT-1052','g13','G1',6,8,'booking','cancelled',1400,{paid:0,form:'none'}),
+bk('MT-1020','g12','L2',-9,-6,'airbnb','checked_out',1600,{paid:'all',form:'done'}),
+bk('MT-1022','g9','G1',-8,-4,'direct','checked_out',1400,{paid:'all',form:'done'}),
+bk('MT-1025','g7','S3',-7,-5,'trip','checked_out',1200,{paid:'all',form:'done'})];
+bookings.forEach(function(b){if(b.paid==='all')b.paid=b.total;});
+var chats=[
+{b:'MT-1043',unread:1,m:[{f:'g',t:'请问可以提前入住吗？我们中午12点到。',tr:'ขอเช็คอินก่อนเวลาได้ไหม เรามาถึงเที่ยงตรง',at:'09:41'}]},
+{b:'MT-1042',unread:1,m:[{f:'g',t:'Hi! Could we get one more towel tonight?',tr:'สวัสดีค่ะ คืนนี้ขอผ้าเช็ดตัวเพิ่มอีกผืนได้ไหม',at:'21:40'}]},
+{b:'MT-1046',unread:1,m:[{f:'g',t:'내일 도착합니다. 주차 가능한가요?',tr:'พรุ่งนี้จะถึงค่ะ จอดรถได้ไหม',at:'18:05'}]},
+{b:'MT-1031',unread:0,m:[{f:'g',t:'Is there parking nearby?',tr:'มีที่จอดรถใกล้ๆ ไหม',at:'Fri'},{f:'me',t:'มีที่จอดรถฟรีหน้าที่พัก 2 คันค่ะ',tr:'There is free parking for 2 cars in front of the property.',at:'Fri'},{f:'g',t:'Perfect, thanks!',tr:'เยี่ยมเลย ขอบคุณ',at:'Fri'}]}];
+return {
+rooms:rooms,guests:guests,bookings:bookings,chats:chats,
+channels:[{id:'airbnb',ical:true,email:true,last:'09:12'},{id:'booking',ical:true,email:true,last:'09:10'},{id:'agoda',ical:true,email:false,last:'09:08'},{id:'trip',ical:true,email:true,last:'09:11'}],
+rates:{Loft:1600,Garden:1400,Studio:1200},rateOv:{},closed:{},
+requests:[{room:'L2',what:'Fresh towels',at:'21:40',done:false},{room:'G1',what:'Clean room',at:'09:05',done:true}],
+laundry:{cur:{Sheets:8,Pillowcases:12,Towels:12,'Bath mats':4},hist:[{date:D(-3),items:'Sheets 10 · Towels 14 · Pillowcases 16',status:'Returned'},{date:D(-1),items:'Sheets 6 · Towels 9 · Pillowcases 8',status:'At shop'}]},
+expenses:[{date:D(-1),cat:'Supplies',desc:'Toiletries restock',amt:1850,slip:true},{date:D(-3),cat:'Laundry',desc:'Laundry shop · weekly',amt:1240,slip:true},{date:D(-5),cat:'Utilities',desc:'Electricity · Sep',amt:6420,slip:true},{date:D(-8),cat:'Repairs',desc:'Aircon service Studio 4',amt:2500,slip:false},{date:D(-12),cat:'Staff',desc:'Housekeeper wages · half month',amt:9000,slip:true},{date:D(-15),cat:'Internet',desc:'Fiber 1 Gbps',amt:899,slip:true}],
+staff:[{name:'Ploy Srisuk',role:'Owner',perms:'all'},{name:'Mint Kaewkla',role:'Front desk',perms:['Overview','Room board','Bookings','Chat','Guests','TM30','Night audit']},{name:'Noi Jaidee',role:'Housekeeper',perms:['Housekeeping','Laundry']},{name:'Fon Somsri',role:'Housekeeper',perms:['Housekeeping','Laundry']},{name:'Kwan Accounting',role:'Accountant',perms:['Reports','Accounting','Payouts']}],
+agents:[{name:'Hatyai Tours',contact:'Khun Bee',disc:15,bk:6},{name:'North Trails Co.',contact:'Khun Art',disc:12,bk:3},{name:'Siam Easy Travel',contact:'Khun Nok',disc:10,bk:1}],
+log:[{at:'13:02',who:'System',what:'Door code 4821# issued on TTLock for Loft 2 · Emma Wilson'},{at:'12:40',who:'System',what:'Key box 3 code sent to Li Wei'},{at:'11:20',who:'Mint',what:'Checked out Lucas Martin · Loft 1'},{at:'09:13',who:'System',what:'Check-in link sent to Emma Wilson'},{at:'09:12',who:'System',what:'New booking from Airbnb · Emma Wilson · Loft 2'},{at:'08:55',who:'Noi',what:'Garden 1 marked clean · 4 photos'}],
+audit:{closed:false,counted:''},
+payout:{src:'airbnb',rows:null},bank:null,
+settings:{name:'Baan Doi Loft',addr:'12 Nimman Soi 7, Chiang Mai 50200',cin:'14:00',cout:'12:00',wifi:'BaanDoi_5G',wifipw:'doiloft2026',rules:'Quiet hours 22:00 – 07:00\nNo smoking inside the rooms\nCheck-out by 12:00\nNo parties or events'}
+};}
+var S=seed();
+var UI={route:'overview',drawer:null,modal:null,bFilter:'all',bCh:'',q:'',chat:'MT-1043',hkTab:'today',repTab:'overview',payTab:'ota',roomTab:'rooms',staffSel:1,calStart:0,acTab:'expenses'};
+
+function G(id){return S.guests.find(function(g){return g.id===id;});}
+function B(id){return S.bookings.find(function(b){return b.id===id;});}
+function R(id){return S.rooms.find(function(r){return r.id===id;});}
+function log(who,what){S.log.unshift({at:now(),who:who,what:what});}
+function live(b){return b.status!=='cancelled';}
+function occupying(b,day){return live(b)&&b.in<=day&&b.out>day;}
+function arrivals(){return S.bookings.filter(function(b){return live(b)&&b.in===TODAY;});}
+function departures(){return S.bookings.filter(function(b){return live(b)&&b.out===TODAY;});}
+function inHouse(){return S.bookings.filter(function(b){return b.status==='checked_in';});}
+function sellable(day){return S.rooms.filter(function(r){return !(r.ooo&&r.ooo.from<=day&&r.ooo.to>day);}).length;}
+function occ(day){var n=S.bookings.filter(function(b){return occupying(b,day);}).length;return {n:n,cap:sellable(day)};}
+function rateFor(type,day){var k=type+'|'+day;if(S.rateOv[k]!=null)return S.rateOv[k];var w=new Date(day+'T00:00:00Z').getUTCDay();return S.rates[type]+((w===5||w===6)?300:0);}
+function fee(b){return Math.round(b.total*CH[b.ch].fee);}
+function chPill(ch){return '<span class="pill '+CH[ch].c+'">'+CH[ch].n+'</span>';}
+function stPill(b){var m={confirmed:['act','Confirmed'],checked_in:['ink','Checked in'],checked_out:['out','Checked out'],cancelled:['out','Cancelled']}[b.status];return '<span class="pill '+m[0]+'">'+m[1]+'</span>';}
+function formPill(b){return b.form==='done'?'<span class="pill ok">Online check-in done</span>':b.form==='sent'?'<span class="pill warn">Link sent</span>':'<span class="pill">Not sent</span>';}
+function bal(b){return b.total-b.paid;}
+function unread(){return S.chats.reduce(function(a,c){return a+c.unread;},0);}
+
+/* ---------- nav ---------- */
+var NAV=[
+['overview','Overview','home'],['board','Room board','board'],['bookings','Bookings','cal'],['chat','Chat','chat'],['guests','Guests','user'],['rates','Calendar','cal'],['channels','OTA channels','globe'],['rooms','Rooms & key boxes','bed'],['agents','Travel agents','user'],['tm30','TM30 & ร.ร.3','shield'],['audit','Night audit','money'],
+'HK Manager',['hk','Housekeeping','clean'],['laundry','Laundry','wash'],
+'Finance',['payouts','Payouts & bank','bank'],['accounting','Accounting','money'],['reports','Reports','chart'],
+'Guest views',['gv-checkin','Online check-in','phone'],['gv-pass','Stay pass','key'],['gv-kiosk','Kiosk','tablet'],
+'Admin',['staff','Staff & access','user'],['log','Activity log','list'],['property','Settings','gear']];
+var TITLES={};NAV.forEach(function(n){if(typeof n!=='string')TITLES[n[0]]=n[1];});
+function renderNav(){
+var h='';NAV.forEach(function(n){
+if(typeof n==='string'){h+='<div class="div"></div><div class="grp">'+n+'</div>';return;}
+var on=UI.route===n[0]?' on':'';var cnt=n[0]==='chat'&&unread()?'<span class="cnt">'+unread()+'</span>':'';
+h+='<button class="ni'+on+'" data-go="'+n[0]+'">'+ic(n[2])+esc(n[1])+cnt+'</button>';});
+document.getElementById('nav').innerHTML=h;
+var tb=[['overview','Today','home'],['board','Board','board'],['bookings','Bookings','cal'],['chat','Chat','chat']];
+document.getElementById('tabbar').innerHTML=tb.map(function(t){return '<button class="'+(UI.route===t[0]?'on':'')+'" data-go="'+t[0]+'">'+ic(t[2])+t[1]+'</button>';}).join('')+'<button data-act="menu">'+ic('more')+'More</button>';
+document.getElementById('bell').textContent=unread();document.getElementById('bell').style.display=unread()?'':'none';
+document.getElementById('crumb').innerHTML='<span>Baan Doi Loft /</span> '+esc(TITLES[UI.route]||'');
+var on=S.rooms.filter(function(r){return r.lock==='ttlock';}).length;document.getElementById('lockStatus').textContent='LOCKS · '+on+' ONLINE';
+}
+
+/* ---------- charts ---------- */
+function barChart(data,opts){var W=560,H=180,pl=34,pb=22,max=opts.max,n=data.length,bw=(W-pl)/n;
+var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(opts.label)+'">';
+[0,.5,1].forEach(function(t){var y=H-pb-(H-pb-10)*t;s+='<line x1="'+pl+'" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="#EBF0F6"/><text x="'+(pl-6)+'" y="'+(y+3)+'" text-anchor="end">'+opts.fmt(max*t)+'</text>';});
+data.forEach(function(d,i){var x=pl+i*bw+bw*.18,w=bw*.64,y0=H-pb;d.parts.forEach(function(p){var h=(H-pb-10)*p.v/max;y0-=h;if(h>0)s+='<rect x="'+x+'" y="'+y0+'" width="'+w+'" height="'+h+'" rx="3" fill="'+p.c+'"/>';});if(d.label)s+='<text x="'+(x+w/2)+'" y="'+(H-6)+'" text-anchor="middle">'+d.label+'</text>';});
+return s+'</svg>';}
+function lineChart(vals,labels,label){var W=560,H=170,pl=34,pb=22,n=vals.length,step=(W-pl-8)/(n-1);
+var pts=vals.map(function(v,i){return [pl+i*step,H-pb-(H-pb-10)*v/100];});
+var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(label)+'">';
+[0,50,100].forEach(function(t){var y=H-pb-(H-pb-10)*t/100;s+='<line x1="'+pl+'" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="#EBF0F6"/><text x="'+(pl-6)+'" y="'+(y+3)+'" text-anchor="end">'+t+'%</text>';});
+s+='<path d="M'+pts[0][0]+' '+(H-pb)+' L'+pts.map(function(p){return p.join(' ');}).join(' L')+' L'+pts[n-1][0]+' '+(H-pb)+'Z" fill="rgba(23,116,237,.12)"/>';
+s+='<path d="M'+pts.map(function(p){return p.join(' ');}).join(' L')+'" fill="none" stroke="#1774ED" stroke-width="2"/>';
+s+='<circle cx="'+pts[n-1][0]+'" cy="'+pts[n-1][1]+'" r="4" fill="#1774ED"/>';
+labels.forEach(function(l,i){if(l)s+='<text x="'+(pl+i*step)+'" y="'+(H-6)+'" text-anchor="middle">'+l+'</text>';});
+return s+'</svg>';}
+var REV14=[[1200,3600,0],[800,4200,600],[0,5200,0],[1500,3900,0],[2400,4800,800],[1800,6100,0],[600,3300,0],[900,2800,500],[1200,4400,0],[0,5600,0],[2100,5200,700],[1600,6400,0],[1100,3700,0],[1400,4900,0]];
+
+/* ---------- pages ---------- */
+var P={};
+P.overview=function(){
+var a=arrivals(),dp=departures(),o=occ(TODAY),ih=inHouse();
+var pend=a.filter(function(b){return b.status==='confirmed';}).length;
+var mtd=S.bookings.filter(function(b){return live(b)&&b.in>='2026-10-01'&&b.in<=TODAY;}).reduce(function(s,b){return s+b.paid;},0)+52400;
+var adr=Math.round(S.bookings.filter(live).reduce(function(s,b){return s+b.total;},0)/S.bookings.filter(live).reduce(function(s,b){return s+diff(b.in,b.out);},0));
+var rs={dirty:0,cleaning:0,clean:0,inspected:0,ooo:0};S.rooms.forEach(function(r){rs[r.hk]++;});
+var pct=Math.round(o.n/o.cap*100);
+var tot=REV14.reduce(function(s,r){return s+r[0]+r[1]+r[2];},0);
+return '<div class="ph"><div><div class="lb">'+fdw(TODAY).replace('Tue','Tuesday,')+'</div><h1>Good morning, <i>Ploy</i>.</h1><div class="sub">'+a.length+' check-ins today · '+dp.length+' check-outs · '+ih.length+' in-house.</div></div><div class="acts"><button class="btn sec" data-go="reports">Daily report</button><button class="btn" data-act="newBooking">+ New booking</button></div></div>'+
+'<div class="stats">'+
+stat('Occupancy',pct+'%',o.n+'/'+o.cap+' units')+stat('Revenue · MTD',baht(mtd),'cash received')+stat('Arrivals',a.length,pend?pend+' expected (EA)':'all arrived')+stat('In-house',ih.length,ih.length*2+' guests staying')+stat('Departures',dp.length,dp.filter(function(b){return b.status!=='checked_out';}).length?dp.filter(function(b){return b.status!=='checked_out';}).length+' expected (ED)':'all departed')+stat('ADR',baht(adr),'avg per night')+'</div>'+
+'<div class="grid g2"><div class="card"><div class="ch"><div><h3>Revenue · last 14 days</h3><div class="mono" style="font-size:26px;margin-top:4px">'+baht(tot)+'</div><div class="cap" style="color:var(--ok)">+12% MTD vs LM</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill"><span class="dot" style="background:#1774ED"></span>Direct</span><span class="pill"><span class="dot" style="background:#0D294A"></span>OTA</span><span class="pill"><span class="dot" style="background:#C68F3E"></span>Walk-in</span></div></div>'+
+barChart(REV14.map(function(r,i){return {label:(i%2===0||i===13)?String(addDays(TODAY,i-13).slice(8)):'',parts:[{v:r[1],c:'#0D294A'},{v:r[0],c:'#1774ED'},{v:r[2],c:'#C68F3E'}]};}),{max:8000,fmt:function(v){return v?(v/1000)+'k':'0';},label:'Revenue by day'})+'</div>'+
+'<div class="card"><div class="ch"><h3>Room status · live</h3><span class="cap">'+S.rooms.length+' units · 1 OOO excluded</span></div><div style="display:flex;justify-content:center"><div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(#1774ED 0 '+pct+'%,#2E7D4F '+pct+'% 100%);display:grid;place-items:center"><div style="width:110px;height:110px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center"><div><div style="font-size:28px;letter-spacing:-.02em">'+pct+'%</div><div class="cap">occupied</div></div></div></div></div>'+
+lgRow('#1774ED','Occupied',o.n)+lgRow('#2E7D4F','Vacant',o.cap-o.n)+lgRow('#DC2626','Dirty · VD / OD',rs.dirty)+lgRow('#C68F3E','Cleaning in progress',rs.cleaning)+lgRow('#8497B0','Out of order · OOO',rs.ooo)+'</div></div>'+
+'<div class="grid g3"><div class="card"><div class="ch"><h3>Arrivals today</h3><span class="cap">'+a.length+'</span></div>'+a.map(function(b){return '<div class="row"><div class="g" style="cursor:pointer" data-act="openB" data-id="'+b.id+'"><b>'+esc(G(b.g).name)+'</b><small>'+R(b.room).name+' · '+CH[b.ch].n+'</small></div>'+(b.status==='checked_in'?'<span class="pill ink">Checked in</span>':'<button class="btn sm sec" data-act="openB" data-id="'+b.id+'">Open</button>')+'</div>';}).join('')+'</div>'+
+'<div class="card"><div class="ch"><h3>Recent activity</h3><span class="cap">Live</span></div>'+S.log.slice(0,5).map(function(l){return '<div class="row"><span class="dot" style="background:var(--blue)"></span><div class="g"><b style="font-weight:400">'+esc(l.what)+'</b><small>'+esc(l.who)+' · '+l.at+'</small></div></div>';}).join('')+'</div>'+
+'<div class="card" style="background:linear-gradient(180deg,#fff,#F4F7FB)"><div class="ch"><h3>AI insights</h3><span class="cap">2 suggestions today</span></div>'+
+'<div class="well" style="padding:14px 16px;display:flex;flex-direction:column;gap:6px"><b style="font-weight:500">Kenji Sato has not checked in online</b><span class="cap" style="font-size:13px">Arrives today 15:00. Send the check-in link so his door code goes out on time.</span><button class="btn sm blue" style="align-self:flex-start" data-act="openB" data-id="MT-1045">Open booking</button></div>'+
+'<div class="well" style="padding:14px 16px;display:flex;flex-direction:column;gap:6px"><b style="font-weight:500">Studio 3 is empty on '+fdw(D(5))+'</b><span class="cap" style="font-size:13px">A gap night between two stays. A lower direct rate often fills it.</span><button class="btn sm sec" style="align-self:flex-start" data-go="rates">Open calendar</button></div></div></div>';};
+function stat(l,v,s){return '<div class="stat"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';}
+function lgRow(c,l,v){return '<div class="lg"><span class="dot" style="background:'+c+'"></span><span style="flex:1">'+l+'</span><span class="mono" style="color:var(--muted)">'+v+'</span></div>';}
+
+P.board=function(){
+var start=D(-2+UI.calStart),days=[];for(var i=0;i<14;i++)days.push(addDays(start,i));var end=addDays(start,14);
+var h='<div class="ph"><div><div class="lb">14 days · every channel</div><h1>Room board</h1><div class="sub">Every channel in one grid. Click a booking to open it, or an empty day to add one.</div></div><div class="acts"><button class="btn sec sm" data-act="calPrev">‹ Earlier</button><button class="btn sec sm" data-act="calToday">Today</button><button class="btn sec sm" data-act="calNext">Later ›</button><button class="btn" data-act="newBooking">+ New booking</button></div></div>';
+h+='<div class="card"><div class="ch"><div style="display:flex;gap:6px;flex-wrap:wrap">'+['airbnb','booking','agoda','trip','direct','agent'].map(chPill).join('')+'</div><span class="cap"><span class="dot" style="background:var(--ok)"></span> Synced '+S.channels[0].last+'</span></div><div class="tw"><div class="board" style="grid-template-columns:110px repeat(14,minmax(0,1fr))"><span></span>';
+days.forEach(function(d){var dt=new Date(d+'T00:00:00Z');h+='<span class="d'+(d===TODAY?' today':'')+'">'+DOW[dt.getUTCDay()]+'<br>'+dt.getUTCDate()+'</span>';});
+S.rooms.forEach(function(r,ri){var row=ri+2;h+='<span class="r" style="grid-row:'+row+'">'+r.name+'<small>'+r.type+' · '+(r.lock==='ttlock'?'TTLock':'Key box '+r.box)+'</small></span>';
+days.forEach(function(d,di){h+='<button class="cell'+(d===TODAY?' today':'')+'" style="grid-row:'+row+';grid-column:'+(di+2)+'" data-act="newBooking" data-room="'+r.id+'" data-day="'+d+'" aria-label="Add booking '+r.name+' '+fd(d)+'"></button>';});
+if(r.ooo&&r.ooo.to>start&&r.ooo.from<end){var a=Math.max(0,diff(start,r.ooo.from)),b=Math.min(14,diff(start,r.ooo.to));h+='<span class="bk ooo" style="grid-row:'+row+';grid-column:'+(a+2)+'/'+(b+2)+';display:flex;align-items:center">OOO · '+esc(r.ooo.why)+'</span>';}
+S.bookings.filter(function(b){return live(b)&&b.room===r.id&&b.out>start&&b.in<end;}).forEach(function(b){var a=Math.max(0,diff(start,b.in)),e=Math.min(14,diff(start,b.out));h+='<button class="bk '+CH[b.ch].c+(b.status==='checked_in'?' in':'')+'" style="grid-row:'+row+';grid-column:'+(a+2)+'/'+(e+2)+'" data-act="openB" data-id="'+b.id+'">'+esc(G(b.g).name)+' · '+CH[b.ch].n+'</button>';});});
+return h+'</div></div></div>';};
+
+P.bookings=function(){
+var f=UI.bFilter,list=S.bookings.slice().sort(function(a,b){return a.in<b.in?1:-1;});
+list=list.filter(function(b){if(f==='arriving')return live(b)&&b.in===TODAY;if(f==='inhouse')return b.status==='checked_in';if(f==='departing')return live(b)&&b.out===TODAY;if(f==='upcoming')return b.status==='confirmed'&&b.in>TODAY;if(f==='cancelled')return b.status==='cancelled';return true;});
+if(UI.bCh)list=list.filter(function(b){return b.ch===UI.bCh;});
+var q=UI.q.toLowerCase();if(q)list=list.filter(function(b){return (G(b.g).name+' '+b.id+' '+b.ref+' '+R(b.room).name).toLowerCase().indexOf(q)>=0;});
+var segs=[['all','All'],['arriving','Arriving'],['inhouse','In-house'],['departing','Departing'],['upcoming','Upcoming'],['cancelled','Cancelled']];
+return '<div class="ph"><div><div class="lb">'+S.bookings.length+' bookings</div><h1>Bookings</h1></div><div class="acts"><button class="btn" data-act="newBooking">+ New booking</button></div></div>'+
+'<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="seg">'+segs.map(function(s){return '<button class="'+(f===s[0]?'on':'')+'" data-act="bFilter" data-v="'+s[0]+'">'+s[1]+'</button>';}).join('')+'</div><label for="chf" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Channel</label><select id="chf" class="input" style="width:auto;border-radius:999px" data-change="bCh"><option value="">All channels</option>'+Object.keys(CH).map(function(k){return '<option value="'+k+'"'+(UI.bCh===k?' selected':'')+'>'+CH[k].n+'</option>';}).join('')+'</select></div>'+
+'<div class="card"><div class="tw"><table><thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th>Channel</th><th>Status</th><th>Check-in form</th><th style="text-align:right">Total</th><th style="text-align:right">Balance</th></tr></thead><tbody>'+
+(list.length?list.map(function(b){return '<tr class="click" data-act="openB" data-id="'+b.id+'"><td class="mono">'+b.id+'</td><td>'+esc(G(b.g).name)+'</td><td>'+R(b.room).name+'</td><td>'+fd(b.in)+' → '+fd(b.out)+' <span class="cap">· '+diff(b.in,b.out)+'n</span></td><td>'+chPill(b.ch)+'</td><td>'+stPill(b)+'</td><td>'+formPill(b)+'</td><td class="num" style="text-align:right">'+baht(b.total)+'</td><td class="num" style="text-align:right;'+(bal(b)>0&&live(b)?'color:var(--bad)':'')+'">'+(live(b)?baht(bal(b)):'—')+'</td></tr>';}).join(''):'<tr><td colspan="9" class="empty">No bookings match this filter.</td></tr>')+
+'</tbody></table></div></div>';};
+
+P.chat=function(){
+var c=S.chats.find(function(x){return x.b===UI.chat;})||S.chats[0];c.unread=0;var b=B(c.b),g=G(b.g);
+var L={en:'EN',zh:'中文',ko:'한국어',ja:'日本語',th:'ไทย'};
+return '<div class="ph"><div><div class="lb">Auto-translated both ways</div><h1>Chat</h1></div></div><div class="chat"><div class="convs">'+S.chats.map(function(x){var bb=B(x.b),gg=G(bb.g),last=x.m[x.m.length-1];return '<button class="conv'+(x.b===c.b?' on':'')+'" data-act="chatSel" data-id="'+x.b+'"><span class="av">'+esc(gg.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2))+'</span><span style="flex:1;min-width:0"><b style="font-weight:500;display:block">'+esc(gg.name)+'</b><small class="cap" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(last.f==='g'?last.tr:last.t)+'</small></span><span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="pill" style="font-size:11px">'+L[gg.lang]+'</span>'+(x.unread?'<span class="dot" style="background:var(--blue)"></span>':'')+'</span></button>';}).join('')+'</div>'+
+'<div class="thread"><div class="hd"><span class="av">'+esc(g.name.slice(0,2))+'</span><div style="flex:1;min-width:0"><b style="font-weight:500">'+esc(g.name)+'</b><div class="cap">'+R(b.room).name+' · '+fd(b.in)+' → '+fd(b.out)+' · '+CH[b.ch].n+'</div></div><span class="pill act">Translating to '+L[g.lang]+'</span><button class="btn sm sec" data-act="openB" data-id="'+b.id+'">Booking</button></div>'+
+'<div class="msgs" id="msgs">'+c.m.map(function(m){return m.f==='g'?'<div class="bub">'+esc(m.t)+'<small>แปล: '+esc(m.tr)+'</small><span class="t">'+m.at+'</span></div>':'<div class="bub me">'+esc(m.t)+'<small>ส่งเป็น: '+esc(m.tr)+'</small><span class="t">'+m.at+'</span></div>';}).join('')+'</div>'+
+'<div class="composer"><div class="qr">'+Object.keys(QR).map(function(k){return '<button data-act="qr" data-k="'+k+'">'+QR[k].label+'</button>';}).join('')+'</div><div style="display:flex;gap:10px"><label for="msgIn" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message</label><input id="msgIn" class="input" placeholder="พิมพ์ภาษาไทยได้เลย ระบบแปลให้แขก" style="border-radius:999px"><button class="btn blue" data-act="send">Send</button></div><span class="cap">In this demo, quick replies show the real translation. Typed messages are sent as written.</span></div></div></div>';};
+var QR={
+wifi:{label:'Wi-Fi',th:'รหัส Wi-Fi คือ BaanDoi_5G รหัสผ่าน doiloft2026 ค่ะ',en:'The Wi-Fi is BaanDoi_5G, password doiloft2026.',zh:'Wi-Fi 名称是 BaanDoi_5G，密码是 doiloft2026。',ko:'Wi-Fi는 BaanDoi_5G, 비밀번호는 doiloft2026입니다.',ja:'Wi-FiはBaanDoi_5G、パスワードはdoiloft2026です。'},
+early:{label:'Early check-in',th:'ได้ค่ะ ห้องพร้อมตั้งแต่ 12:00 รหัสประตูจะส่งให้ก่อนถึงค่ะ',en:'Sure, the room is ready from 12:00. We will send your door code before you arrive.',zh:'可以的，房间中午12点准备好，门锁密码会提前发送给您。',ko:'네, 객실은 12시부터 준비됩니다. 도착 전에 도어 코드를 보내드릴게요.',ja:'はい、お部屋は12時からご用意できます。到着前にドアコードをお送りします。'},
+checkout:{label:'Check-out time',th:'เช็คเอาท์ก่อน 12:00 น. วางกุญแจไว้ในห้องได้เลยค่ะ',en:'Check-out is by 12:00. You can leave the key in the room.',zh:'退房时间是中午12点前，钥匙留在房间里即可。',ko:'체크아웃은 12시까지입니다. 열쇠는 방에 두시면 됩니다.',ja:'チェックアウトは12時までです。鍵はお部屋に置いてください。'},
+parking:{label:'Parking',th:'มีที่จอดรถฟรีหน้าที่พัก 2 คันค่ะ',en:'There is free parking for 2 cars in front of the property.',zh:'门前有2个免费停车位。',ko:'숙소 앞에 무료 주차 공간 2대가 있습니다.',ja:'建物の前に無料駐車場が2台分あります。'},
+towel:{label:'Towels on the way',th:'ได้ค่ะ เดี๋ยวแม่บ้านนำผ้าเช็ดตัวไปให้ที่ห้องนะคะ',en:'Of course, housekeeping will bring fresh towels to your room.',zh:'好的，客房服务会把毛巾送到您的房间。',ko:'네, 하우스키핑이 수건을 객실로 가져다드릴게요.',ja:'承知しました。タオルをお部屋にお持ちします。'}};
+var THANKS={en:['Great, thank you!','เยี่ยมเลย ขอบคุณ'],zh:['好的，谢谢！','โอเค ขอบคุณ'],ko:['감사합니다!','ขอบคุณค่ะ'],ja:['ありがとうございます！','ขอบคุณค่ะ'],th:['ขอบคุณค่ะ','ขอบคุณค่ะ']};
+
+P.guests=function(){var q=UI.q.toLowerCase();var list=S.guests.filter(function(g){return !q||(g.name+' '+g.nat+' '+g.no).toLowerCase().indexOf(q)>=0;});
+return '<div class="ph"><div><div class="lb">'+S.guests.length+' guest profiles</div><h1>Guests</h1><div class="sub">Filled in by guests during online check-in. Returning guests are recognised.</div></div></div><div class="card"><div class="tw"><table><thead><tr><th>Name</th><th>Nationality</th><th>Document</th><th>Stays</th><th>Last stay</th><th>Language</th></tr></thead><tbody>'+
+list.map(function(g){var st=S.bookings.filter(function(b){return b.g===g.id&&live(b);});var last=st.map(function(b){return b.in;}).sort().pop();return '<tr class="click" data-act="openG" data-id="'+g.id+'"><td><b style="font-weight:500">'+esc(g.name)+'</b>'+(st.length>1?' <span class="pill ok">Returning</span>':'')+'</td><td>'+g.nat+'</td><td class="mono">'+(g.no?esc(g.doc)+' · '+esc(g.no.slice(0,4))+'•••':'<span class="cap">Not yet provided</span>')+'</td><td class="num">'+st.length+'</td><td>'+(last?fd(last):'—')+'</td><td>'+g.lang.toUpperCase()+'</td></tr>';}).join('')+'</tbody></table></div></div>';};
+
+P.rates=function(){var days=[];for(var i=0;i<14;i++)days.push(D(i));
+return '<div class="ph"><div><div class="lb">Direct and agent rates</div><h1>Calendar</h1><div class="sub">Click a price to change it. Weekends add ฿300 unless you set a price. OTA prices stay in each OTA’s extranet.</div></div><div class="acts"><button class="btn sec" data-act="bulkRate">Set a price range</button></div></div>'+
+'<div class="card"><div class="tw"><table><thead><tr><th>Room type</th>'+days.map(function(d){var dt=new Date(d+'T00:00:00Z');return '<th style="text-align:center">'+DOW[dt.getUTCDay()]+'<br>'+dt.getUTCDate()+'</th>';}).join('')+'</tr></thead><tbody>'+
+Object.keys(S.rates).map(function(t){return '<tr><td><b style="font-weight:500">'+t+'</b><div class="cap">'+S.rooms.filter(function(r){return r.type===t;}).length+' rooms</div></td>'+days.map(function(d){var k=t+'|'+d,cl=S.closed[k],ov=S.rateOv[k]!=null,free=S.rooms.filter(function(r){return r.type===t&&!(r.ooo&&r.ooo.from<=d&&r.ooo.to>d)&&!S.bookings.some(function(b){return b.room===r.id&&occupying(b,d);});}).length;
+return '<td style="text-align:center;padding:6px 3px"><button data-act="editRate" data-k="'+k+'" style="border:0;width:100%;min-width:58px;border-radius:12px;padding:8px 2px;cursor:pointer;background:'+(cl?'repeating-linear-gradient(45deg,#E2E9F2 0 5px,#EEF2F7 5px 10px)':ov?'var(--act-bg)':'var(--well)')+'"><span class="num" style="display:block;font-weight:500;'+(cl?'text-decoration:line-through;color:var(--muted)':'')+'">'+rateFor(t,d).toLocaleString()+'</span><span class="cap" style="font-size:10.5px">'+(cl?'closed':free+' left')+'</span></button></td>';}).join('')+'</tr>';}).join('')+
+'</tbody></table></div></div>';};
+
+P.channels=function(){return '<div class="ph"><div><div class="lb">Bookings flow in by iCal and confirmation email</div><h1>OTA channels</h1></div><div class="acts"><button class="btn" data-act="syncAll">Sync all now</button></div></div><div class="grid g2">'+
+S.channels.map(function(c){var n=S.bookings.filter(function(b){return b.ch===c.id&&live(b);}).length;return '<div class="card"><div class="ch"><span class="pill '+CH[c.id].c+'" style="font-size:14px;padding:6px 14px">'+CH[c.id].n+'</span><span class="pill ok"><span class="dot" style="background:var(--ok)"></span>Live</span></div>'+
+'<div class="row"><div class="g"><b>iCal calendar</b><small class="mono">https://'+({airbnb:'www.airbnb.com/calendar/ical/',booking:'admin.booking.com/hotel/ical/',agoda:'ycs.agoda.com/ical/',trip:'ebooking.trip.com/ical/'}[c.id])+'•••.ics</small></div><span class="cap">'+c.last+'</span></div>'+
+'<div class="row"><div class="g"><b>Read confirmation emails</b><small>Adds guest name and payout amount iCal does not send</small></div><button class="switch" role="switch" aria-checked="'+c.email+'" aria-label="Email import" data-act="toggleEmail" data-id="'+c.id+'"></button></div>'+
+'<div class="row"><div class="g"><b>'+n+' bookings</b><small>Commission '+Math.round(CH[c.id].fee*100)+'%</small></div><button class="btn sm sec" data-act="sync" data-id="'+c.id+'">Sync now</button></div></div>';}).join('')+'</div>';};
+
+P.rooms=function(){var t=UI.roomTab;
+var h='<div class="ph"><div><div class="lb">'+S.rooms.length+' rooms · '+S.rooms.filter(function(r){return r.lock==='ttlock';}).length+' smart locks · '+S.rooms.filter(function(r){return r.lock==='box';}).length+' key boxes</div><h1>Rooms &amp; key boxes</h1></div><div class="seg"><button class="'+(t==='rooms'?'on':'')+'" data-act="roomTab" data-v="rooms">Rooms</button><button class="'+(t==='locks'?'on':'')+'" data-act="roomTab" data-v="locks">Locks &amp; key boxes</button></div></div>';
+if(t==='rooms')return h+'<div class="grid g3">'+S.rooms.map(function(r){return '<div class="card"><div style="height:120px;border-radius:20px;background:linear-gradient(135deg,#DCEBFA,#F4F7FB);display:grid;place-items:center;color:var(--soft)">'+ic('bed').replace('<svg','<svg style="width:40px;height:40px;stroke:#8497B0;fill:none;stroke-width:1.5"')+'</div><div class="ch"><div><h3>'+r.name+'</h3><div class="cap">'+r.type+' · up to '+r.cap+' guests · '+baht(S.rates[r.type])+'/night</div></div>'+hkPill(r.hk)+'</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">Air con</span><span class="pill">Wi-Fi</span><span class="pill">Hot shower</span>'+(r.type!=='Studio'?'<span class="pill">Kitchenette</span>':'')+'</div></div>';}).join('')+'</div>';
+return h+'<div class="card"><div class="tw"><table><thead><tr><th>Room</th><th>Entry</th><th>Status</th><th>Battery</th><th>Current code</th><th></th></tr></thead><tbody>'+S.rooms.map(function(r){var cur=S.bookings.find(function(b){return b.room===r.id&&b.door&&occupying(b,TODAY);});
+return '<tr><td><b style="font-weight:500">'+r.name+'</b></td><td>'+(r.lock==='ttlock'?'TTLock smart lock':'Key box '+r.box)+'</td><td><span class="pill ok">Online</span></td><td>'+(r.lock==='ttlock'?'<span class="num" style="color:'+(r.battery<25?'var(--bad)':'inherit')+'">'+r.battery+'%</span>'+(r.battery<25?' <span class="pill bad">Replace soon</span>':''):'—')+'</td><td class="mono">'+(r.lock==='box'?'Box '+r.box+' · '+r.boxCode:cur?cur.door.code+'# · until '+fd(cur.out):'—')+'</td><td>'+(r.lock==='box'?'<button class="btn sm sec" data-act="newBox" data-id="'+r.id+'">New box code</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div></div>';};
+function hkPill(s){return {dirty:'<span class="pill bad">Dirty</span>',cleaning:'<span class="pill warn">Cleaning</span>',clean:'<span class="pill ok">Clean</span>',inspected:'<span class="pill ink">Inspected</span>',ooo:'<span class="pill out">OOO</span>'}[s];}
+
+P.agents=function(){return '<div class="ph"><div><div class="lb">Agents book in their own portal at agent rates</div><h1>Travel agents</h1></div><div class="acts"><button class="btn sec" data-act="copyAgent">Copy portal link</button><button class="btn" data-act="addAgent">+ Add agent</button></div></div><div class="card"><div class="tw"><table><thead><tr><th>Agent</th><th>Contact</th><th>Agent discount</th><th>Bookings</th><th></th></tr></thead><tbody>'+S.agents.map(function(a,i){return '<tr><td><b style="font-weight:500">'+esc(a.name)+'</b></td><td>'+esc(a.contact)+'</td><td class="num">−'+a.disc+'%</td><td class="num">'+a.bk+'</td><td><span class="pill ok">Active</span></td></tr>';}).join('')+'</tbody></table></div></div><div class="card"><h3>Example agent rate</h3><div class="row"><div class="g"><b>Loft · '+fdw(D(4))+'</b><small>Public rate '+baht(rateFor('Loft',D(4)))+'</small></div><span class="num">Hatyai Tours pays '+baht(rateFor('Loft',D(4))*.85)+'</span></div></div>';};
+
+P.tm30=function(){var list=S.bookings.filter(function(b){return live(b)&&b.in<=TODAY&&b.out>=TODAY&&b.status!=='checked_out'&&G(b.g).nat!=='THA';});
+return '<div class="ph"><div><div class="lb">Foreign guests must be reported within 24 hours</div><h1>TM30 &amp; ร.ร.3</h1><div class="sub">Data comes from online check-in. Nothing to retype.</div></div><div class="acts"><button class="btn sec" data-act="rr3All">Print ร.ร.3 cards</button><button class="btn" data-act="tm30Export">Export TM30 file</button></div></div>'+
+'<div class="card"><div class="ch"><h3>Foreign guests · '+fdw(TODAY)+'</h3><span class="cap">'+list.length+' guests</span></div><div class="tw"><table><thead><tr><th>Name</th><th>Nationality</th><th>Passport</th><th>Date of birth</th><th>Room</th><th>Arrival</th><th>Data</th><th></th></tr></thead><tbody>'+
+list.map(function(b){var g=G(b.g);var ok=b.form==='done'&&g.no;return '<tr><td>'+esc(g.name.toUpperCase())+'</td><td>'+g.nat+'</td><td class="mono">'+(g.no||'—')+'</td><td class="num">'+(g.dob||'—')+'</td><td>'+R(b.room).name+'</td><td>'+fd(b.in)+'</td><td>'+(ok?'<span class="pill ok">Ready</span>':'<span class="pill warn">Waiting for check-in</span>')+'</td><td><button class="btn sm sec" data-act="rr3" data-id="'+b.id+'"'+(ok?'':' disabled')+'>ร.ร.3</button></td></tr>';}).join('')+'</tbody></table></div></div>'+
+'<div class="card"><div class="row"><span class="pill ok">Guarded</span><div class="g"><b>Duplicate registration blocked</b><small>Li Wei’s passport was photographed twice during check-in. Kept once, so the TM30 file has no repeated name.</small></div></div></div>';};
+
+P.hk=function(){var t=UI.hkTab;var h='<div class="ph"><div><div class="lb">'+fdw(TODAY)+'</div><h1>Housekeeping</h1></div><div class="seg"><button class="'+(t==='today'?'on':'')+'" data-act="hkTab" data-v="today">Today</button><button class="'+(t==='cal'?'on':'')+'" data-act="hkTab" data-v="cal">HK calendar</button><button class="'+(t==='sop'?'on':'')+'" data-act="hkTab" data-v="sop">SOP</button></div></div>';
+if(t==='today'){var nxt={dirty:'cleaning',cleaning:'clean',clean:'inspected',inspected:'dirty'};var lbl={dirty:'Start cleaning',cleaning:'Mark clean',clean:'Inspect',inspected:'Mark dirty'};
+return h+'<div class="grid g3">'+S.rooms.map(function(r){var dep=S.bookings.find(function(b){return live(b)&&b.room===r.id&&b.out===TODAY;}),arr=S.bookings.find(function(b){return live(b)&&b.room===r.id&&b.in===TODAY;}),stay=S.bookings.find(function(b){return b.room===r.id&&b.status==='checked_in'&&b.in<TODAY&&b.out>TODAY;});
+var task=r.hk==='ooo'?r.ooo.why:dep&&arr?'Departure + arrival '+S.settings.cin:dep?'Departure clean':arr?'Arrival '+S.settings.cin:stay?'Stay-over service':'Vacant';
+return '<div class="card"><div class="ch"><div><h3>'+r.name+'</h3><div class="cap">'+task+'</div></div>'+hkPill(r.hk)+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label class="cap" for="hb'+r.id+'">Assigned</label><select id="hb'+r.id+'" class="input" style="width:auto;padding:6px 10px" data-change="hkBy" data-id="'+r.id+'">'+['Noi','Fon'].map(function(n){return '<option'+(r.hkBy===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select>'+(r.hk==='ooo'?'<button class="btn sm sec" data-act="endOoo" data-id="'+r.id+'">Back in service</button>':'<button class="btn sm" data-act="hkNext" data-id="'+r.id+'">'+lbl[r.hk]+'</button>')+'</div>'+(r.hk==='clean'||r.hk==='inspected'?'<div class="cap">'+(r.photos||4)+' photos sent from the housekeeper app</div>':'')+'</div>';}).join('')+'</div>'+
+'<div class="card"><div class="ch"><h3>Requests from Stay pass</h3><span class="cap">'+S.requests.filter(function(q){return !q.done;}).length+' open</span></div>'+(S.requests.length?S.requests.map(function(q,i){return '<div class="row"><div class="g"><b>'+R(q.room).name+' · '+esc(q.what)+'</b><small>from stay pass · '+q.at+'</small></div>'+(q.done?'<span class="pill ink">Done</span>':'<button class="btn sm blue" data-act="reqDone" data-i="'+i+'">Mark done</button>')+'</div>';}).join(''):'<div class="empty">No requests</div>')+'</div>';}
+if(t==='cal'){var days=[];for(var i=0;i<7;i++)days.push(D(i));return h+'<div class="card"><div class="tw"><table><thead><tr><th>Room</th>'+days.map(function(d){return '<th>'+fdw(d)+'</th>';}).join('')+'</tr></thead><tbody>'+S.rooms.map(function(r){return '<tr><td><b style="font-weight:500">'+r.name+'</b></td>'+days.map(function(d){var out=S.bookings.find(function(b){return live(b)&&b.room===r.id&&b.out===d;}),ins=S.bookings.find(function(b){return live(b)&&b.room===r.id&&b.in===d;}),stay=S.bookings.find(function(b){return live(b)&&b.room===r.id&&b.in<d&&b.out>d;});var ooo=r.ooo&&r.ooo.from<=d&&r.ooo.to>d;
+return '<td>'+(ooo?'<span class="pill out">OOO</span>':out?'<span class="pill bad">Departure</span>':stay?'<span class="pill">Service</span>':'')+(ins&&!ooo?' <span class="pill act">Arrival</span>':'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div></div>';}
+var sop=['Open windows, strip beds, collect towels','Check room for left items and damage, take photos','Make beds with fresh linen (hospital corners)','Clean bathroom: toilet, shower, sink, mirror','Restock: water ×2, toiletries, toilet paper','Dust surfaces, wipe switches and remote','Vacuum and mop floor','Air con on 25°C for 10 minutes, then off','Final photo of bed, bathroom, entrance'];
+return h+'<div class="card"><div class="ch"><h3>Departure clean · standard</h3><span class="cap">Shown in the housekeeper app</span></div>'+sop.map(function(s,i){return '<label class="chk"><input type="checkbox" id="sop'+i+'"> <span><b class="mono" style="font-weight:500">'+(i+1)+'.</b> '+s+'</span></label>';}).join('')+'</div>';};
+
+P.laundry=function(){var c=S.laundry.cur;return '<div class="ph"><div><div class="lb">Count, send, and track what is at the shop</div><h1>Laundry</h1></div></div><div class="grid g2"><div class="card"><h3>Today’s batch</h3>'+Object.keys(c).map(function(k){return '<div class="row"><div class="g"><b>'+k+'</b></div><button class="icb" style="width:36px;height:36px" data-act="lq" data-k="'+k+'" data-d="-1" aria-label="Less '+k+'">−</button><b class="num" style="min-width:28px;text-align:center;font-weight:500">'+c[k]+'</b><button class="icb" style="width:36px;height:36px" data-act="lq" data-k="'+k+'" data-d="1" aria-label="More '+k+'">+</button></div>';}).join('')+'<button class="btn blue" data-act="sendLaundry">Send to laundry shop</button><span class="cap">The shop gets the count by LINE so both sides agree on numbers.</span></div>'+
+'<div class="card"><h3>History</h3><div class="tw"><table><thead><tr><th>Date</th><th>Items</th><th>Status</th><th></th></tr></thead><tbody>'+S.laundry.hist.map(function(x,i){return '<tr><td>'+fd(x.date)+'</td><td style="white-space:normal">'+x.items+'</td><td>'+(x.status==='Returned'?'<span class="pill ok">Returned</span>':'<span class="pill warn">At shop</span>')+'</td><td>'+(x.status!=='Returned'?'<button class="btn sm sec" data-act="lReturn" data-i="'+i+'">Mark returned</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div></div></div>';};
+
+P.audit=function(){var a=arrivals(),dp=departures(),unpaid=S.bookings.filter(function(b){return live(b)&&b.in<=TODAY&&bal(b)>0;});
+var cash=6200,pp=3400,exp=cash;var cnt=S.audit.counted,v=cnt===''?null:Number(cnt)-exp;
+var items=[[a.every(function(b){return b.status==='checked_in';}),'All arrivals checked in',a.filter(function(b){return b.status!=='checked_in';}).map(function(b){return G(b.g).name;}).join(', ')+' still expected'],[dp.every(function(b){return b.status==='checked_out';}),'All departures checked out',dp.filter(function(b){return b.status!=='checked_out';}).map(function(b){return G(b.g).name;}).join(', ')+' still in house'],[!unpaid.length,'No unpaid balances',unpaid.map(function(b){return G(b.g).name+' '+baht(bal(b));}).join(', ')],[true,'TM30 file ready for today','All foreign guests with data']];
+return '<div class="ph"><div><div class="lb">'+fdw(TODAY)+'</div><h1>Night audit</h1><div class="sub">Close the day once the checks are clear.</div></div>'+(S.audit.closed?'<span class="pill ink" style="font-size:14px;padding:8px 16px">Day closed · '+S.audit.closed+'</span>':'')+'</div><div class="grid g2"><div class="card"><h3>Checks</h3>'+items.map(function(it){return '<div class="row">'+(it[0]?'<span class="pill ok">✓</span>':'<span class="pill warn">!</span>')+'<div class="g"><b>'+it[1]+'</b>'+(it[0]?'':'<small>'+esc(it[2])+'</small>')+'</div></div>';}).join('')+'</div>'+
+'<div class="card"><h3>Takings today</h3><div class="row"><div class="g"><b>Cash</b><small>expected in drawer</small></div><span class="num">'+baht(cash)+'</span></div><div class="row"><div class="g"><b>PromptPay & card</b><small>via Beam</small></div><span class="num">'+baht(pp)+'</span></div><label class="f" for="cnt">Cash counted<input id="cnt" class="input num" inputmode="numeric" value="'+esc(cnt)+'" placeholder="e.g. 6200" data-input="counted"'+(S.audit.closed?' disabled':'')+'></label><div id="variance" class="cap">'+(v===null?'Count the drawer and enter the amount.':v===0?'<span style="color:var(--ok)">Matches expected cash.</span>':'<span style="color:var(--bad)">Variance '+(v>0?'+':'')+baht(v).replace('฿-','-฿')+'</span>')+'</div><button class="btn" data-act="closeDay"'+(S.audit.closed?' disabled':'')+'>Close the day</button></div></div>';};
+
+P.payouts=function(){var t=UI.payTab;var h='<div class="ph"><div><div class="lb">Find what has not been paid</div><h1>Payouts &amp; bank</h1></div><div class="seg"><button class="'+(t==='ota'?'on':'')+'" data-act="payTab" data-v="ota">OTA payouts</button><button class="'+(t==='bank'?'on':'')+'" data-act="payTab" data-v="bank">Bank statement</button></div></div>';
+if(t==='ota'){var rows=S.payout.rows;return h+'<div class="card"><div class="ch"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label for="psrc" class="cap">Source</label><select id="psrc" class="input" style="width:auto" data-change="psrc">'+['airbnb','booking','trip'].map(function(k){return '<option value="'+k+'"'+(S.payout.src===k?' selected':'')+'>'+CH[k].n+'</option>';}).join('')+'</select></div><button class="btn blue" data-act="importPayout">Import payout file (sample)</button></div>'+(rows?payTable(rows):'<div class="empty">Import the payout report you download from '+CH[S.payout.src].n+'. Mounta matches each line to a booking.</div>')+'</div>';}
+var bk=S.bank;return h+'<div class="card"><div class="ch"><span class="cap">KBank statement export (.csv)</span><button class="btn blue" data-act="importBank">Import statement (sample)</button></div>'+(bk?'<div class="tw"><table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right">Amount</th><th>Match</th></tr></thead><tbody>'+bk.map(function(r){return '<tr><td>'+fd(r.d)+'</td><td>'+esc(r.t)+'</td><td class="num" style="text-align:right">'+baht(r.a)+'</td><td>'+(r.m?'<span class="pill ok">'+esc(r.m)+'</span>':'<span class="pill warn">No record in Mounta</span>')+'</td></tr>';}).join('')+'</tbody></table></div>':'<div class="empty">Import your bank statement to find transfers nobody recorded, and records with no transfer.</div>')+'</div>';};
+function payTable(rows){var m=rows.filter(function(r){return r.b;}).length;return '<div class="stats">'+stat('Lines',rows.length,'in payout file')+stat('Matched',m,'to a booking')+stat('Unmatched',rows.length-m,'need a look')+stat('Total',baht(rows.reduce(function(s,r){return s+r.a;},0)),'paid out')+'</div><div class="tw"><table><thead><tr><th>Payout ref</th><th>Guest</th><th>Stay</th><th style="text-align:right">Amount</th><th>Match</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td class="mono">'+r.ref+'</td><td>'+esc(r.n)+'</td><td>'+r.s+'</td><td class="num" style="text-align:right">'+baht(r.a)+'</td><td>'+(r.b?'<span class="pill ok">'+r.b+'</span>':'<span class="pill warn">No booking found</span>')+'</td></tr>';}).join('')+'</tbody></table></div>';}
+
+P.accounting=function(){var t=UI.acTab;var exp=S.expenses.reduce(function(s,e){return s+e.amt;},0),rev=86400;var cats={};S.expenses.forEach(function(e){cats[e.cat]=(cats[e.cat]||0)+e.amt;});var mx=Math.max.apply(null,Object.keys(cats).map(function(k){return cats[k];}));
+return '<div class="ph"><div><div class="lb">October 2026</div><h1>Accounting</h1></div><div class="acts"><button class="btn sec" data-act="exportAcc">Export for accountant</button><button class="btn" data-act="addExpense">+ Add expense</button></div></div><div class="stats">'+stat('Revenue',baht(rev),'month to date')+stat('Expenses',baht(exp),S.expenses.length+' entries')+stat('Net',baht(rev-exp),'before tax')+stat('Slips attached',S.expenses.filter(function(e){return e.slip;}).length+'/'+S.expenses.length,'for the accountant')+'</div><div class="grid g2"><div class="card"><h3>Expenses</h3><div class="tw"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th style="text-align:right">Amount</th><th>Slip</th></tr></thead><tbody>'+S.expenses.map(function(e){return '<tr><td>'+fd(e.date)+'</td><td>'+e.cat+'</td><td>'+esc(e.desc)+'</td><td class="num" style="text-align:right">'+baht(e.amt)+'</td><td>'+(e.slip?'<span class="pill ok">Attached</span>':'<span class="pill warn">Missing</span>')+'</td></tr>';}).join('')+'</tbody></table></div></div><div class="card"><h3>By category</h3>'+Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];}).map(function(k){return '<div style="display:flex;flex-direction:column;gap:4px"><div class="lg"><span style="flex:1">'+k+'</span><span class="num">'+baht(cats[k])+'</span></div><div style="height:8px;border-radius:4px;background:var(--well)"><div style="height:100%;width:'+(cats[k]/mx*100)+'%;border-radius:4px;background:var(--ink)"></div></div></div>';}).join('')+'</div></div>';};
+
+P.reports=function(){var t=UI.repTab;var h='<div class="ph"><div><div class="lb">Baan Doi Loft</div><h1>Reports</h1></div><div class="seg">'+[['overview','Overview'],['business','Business review'],['manager','Manager report'],['forecast','Forecast']].map(function(s){return '<button class="'+(t===s[0]?'on':'')+'" data-act="repTab" data-v="'+s[0]+'">'+s[1]+'</button>';}).join('')+'</div></div>';
+if(t==='overview'){var occ30=[62,58,71,80,83,90,76,64,60,72,85,88,92,79,66,63,70,81,84,91,78,67,61,74,86,89,93,80,72,83];var lab=occ30.map(function(v,i){return i%5===0||i===29?String(addDays(TODAY,i-29).slice(8)):'';});
+var byCh={};S.bookings.filter(live).forEach(function(b){byCh[b.ch]=(byCh[b.ch]||0)+b.total;});var mx=Math.max.apply(null,Object.keys(byCh).map(function(k){return byCh[k];}));
+return h+'<div class="stats">'+stat('Occupancy · 30d','76%','+6 pts vs last month')+stat('ADR',baht(1462),'avg per night')+stat('RevPAR',baht(1111),'per available room')+stat('Revenue · 30d',baht(128600),'all channels')+'</div><div class="grid g2"><div class="card"><h3>Occupancy · last 30 days</h3>'+lineChart(occ30,lab,'Occupancy last 30 days')+'</div><div class="card"><h3>Revenue by channel</h3>'+Object.keys(byCh).sort(function(a,b){return byCh[b]-byCh[a];}).map(function(k){return '<div style="display:flex;flex-direction:column;gap:4px"><div class="lg"><span style="flex:1">'+CH[k].n+'</span><span class="num">'+baht(byCh[k])+'</span></div><div style="height:10px;border-radius:5px;background:var(--well)"><div style="height:100%;width:'+(byCh[k]/mx*100)+'%;border-radius:5px;background:var(--blue)"></div></div></div>';}).join('')+'</div></div>';}
+if(t==='business'){var rows=[['Aug 2026',71,1390,96400,31200],['Sep 2026',68,1410,92100,29800],['Oct 2026',76,1462,128600,33900]];return h+'<div class="card"><h3>Three-month review</h3><div class="tw"><table><thead><tr><th>Month</th><th>Occupancy</th><th>ADR</th><th>Revenue</th><th>Expenses</th><th>Net</th><th>Margin</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'%</td><td class="num">'+baht(r[2])+'</td><td class="num">'+baht(r[3])+'</td><td class="num">'+baht(r[4])+'</td><td class="num">'+baht(r[3]-r[4])+'</td><td class="num">'+Math.round((r[3]-r[4])/r[3]*100)+'%</td></tr>';}).join('')+'</tbody></table></div><div class="well" style="padding:14px 16px">October revenue is up 40% on September, driven by Airbnb and two long direct stays. Expenses rose 14%, mostly the Studio 4 aircon repair.</div></div>';}
+if(t==='manager'){var lines=[['Room revenue',128600,92100],['OTA commission',-17200,-12900],['Housekeeping wages',-18000,-18000],['Utilities',-6420,-5980],['Laundry',-4960,-4100],['Repairs',-2500,0],['Supplies',-2020,-1900]];return h+'<div class="card"><h3>P&amp;L · October vs September</h3><div class="tw"><table><thead><tr><th>Line</th><th style="text-align:right">October</th><th style="text-align:right">September</th><th style="text-align:right">Change</th><th></th></tr></thead><tbody>'+lines.map(function(l){var ch=l[2]?Math.round((l[1]-l[2])/Math.abs(l[2])*100):100;var flag=Math.abs(ch)>=25&&l[1]<0;return '<tr><td>'+l[0]+'</td><td class="num" style="text-align:right">'+baht(l[1]).replace('฿-','-฿')+'</td><td class="num" style="text-align:right">'+baht(l[2]).replace('฿-','-฿')+'</td><td class="num" style="text-align:right">'+(ch>0?'+':'')+ch+'%</td><td>'+(flag?'<span class="pill warn">Explain</span>':'')+'</td></tr>';}).join('')+'</tbody></table></div><label class="f" for="mgrNote">Manager comment<textarea id="mgrNote" class="input" placeholder="Explain the flagged lines for the owner"></textarea></label></div>';}
+var fc=[];for(var i=0;i<30;i++){var o=occ(D(i));fc.push({label:i%5===0?String(D(i).slice(8)):'',parts:[{v:Math.round(o.n/Math.max(1,o.cap)*100),c:'#1774ED'}]});}
+return h+'<div class="card"><div class="ch"><h3>On the books · next 30 days</h3><span class="cap">From confirmed bookings</span></div>'+barChart(fc,{max:100,fmt:function(v){return Math.round(v)+'%';},label:'Occupancy on the books next 30 days'})+'</div>';};
+
+P['gv-checkin']=function(){return gvIntro('Online check-in','The page guests open from the link Mounta sends. Try it as Kenji Sato, who has not checked in yet.','gvCheckin','MT-1045','Open as Kenji Sato');};
+P['gv-pass']=function(){return gvIntro('Stay pass','One link with the door code, Wi-Fi, house guide and requests. Open Emma Wilson’s pass.','gvPass','MT-1042','Open Emma’s stay pass');};
+P['gv-kiosk']=function(){return gvIntro('Kiosk','A tablet at the counter for walk-in guests and guests who booked. Try a walk-in booking.','gvKiosk','','Open kiosk');};
+function gvIntro(t,d,act,id,btn){return '<div class="ph"><div><div class="lb">Guest view</div><h1>'+t+'</h1><div class="sub">'+d+'</div></div></div><div class="card" style="align-items:flex-start"><button class="btn blue" data-act="'+act+'" data-id="'+id+'">'+btn+'</button><span class="cap">Opens in a device frame. Whatever the guest does updates the admin screens straight away.</span></div>';}
+
+P.staff=function(){var sel=S.staff[UI.staffSel]||S.staff[0];var mods=['Overview','Room board','Bookings','Chat','Guests','Calendar','OTA channels','TM30','Night audit','Housekeeping','Laundry','Payouts','Accounting','Reports','Staff & access'];
+return '<div class="ph"><div><div class="lb">Each person sees only the menus you allow</div><h1>Staff &amp; access</h1></div><div class="acts"><button class="btn" data-act="addStaff">+ Add staff</button></div></div><div class="grid g2"><div class="card"><h3>Team</h3>'+S.staff.map(function(s,i){return '<button class="conv'+(i===UI.staffSel?' on':'')+'" data-act="staffSel" data-i="'+i+'"><span class="av">'+esc(s.name.slice(0,2))+'</span><span style="flex:1"><b style="font-weight:500;display:block">'+esc(s.name)+'</b><small class="cap">'+s.role+'</small></span></button>';}).join('')+'</div><div class="card"><div class="ch"><h3>'+esc(sel.name)+' · menus</h3><span class="pill">'+sel.role+'</span></div>'+(sel.perms==='all'?'<div class="empty">Owners see everything.</div>':mods.map(function(m){var on=sel.perms.indexOf(m)>=0;return '<div class="row"><div class="g"><b style="font-weight:400">'+m+'</b></div><button class="switch" role="switch" aria-checked="'+on+'" aria-label="'+m+'" data-act="perm" data-m="'+m+'"></button></div>';}).join(''))+'</div></div>';};
+
+P.log=function(){return '<div class="ph"><div><div class="lb">Who did what, and when</div><h1>Activity log</h1></div></div><div class="card"><div class="tw"><table><thead><tr><th>Time</th><th>By</th><th>Action</th></tr></thead><tbody>'+S.log.map(function(l){return '<tr><td class="mono">'+l.at+'</td><td>'+esc(l.who)+'</td><td style="white-space:normal">'+esc(l.what)+'</td></tr>';}).join('')+'</tbody></table></div></div>';};
+
+P.property=function(){var s=S.settings;return '<div class="ph"><div><div class="lb">Shown to guests on check-in and the stay pass</div><h1>Settings</h1></div><div class="acts"><button class="btn" data-act="saveSettings">Save</button></div></div><div class="card"><h3>Property</h3><div class="form">'+fld('s_name','Property name',s.name)+fld('s_addr','Address',s.addr)+fld('s_cin','Check-in from',s.cin)+fld('s_cout','Check-out by',s.cout)+fld('s_wifi','Wi-Fi name',s.wifi)+fld('s_wifipw','Wi-Fi password',s.wifipw)+'</div><label class="f" for="s_rules">House rules · one per line<textarea id="s_rules" class="input">'+esc(s.rules)+'</textarea></label></div><div class="card"><h3>Guest languages</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill ink">ไทย</span><span class="pill ink">English</span><span class="pill ink">中文</span></div><span class="cap">Check-in pages and the stay pass appear in the guest’s language.</span></div>';};
+function fld(id,l,v){return '<label class="f" for="'+id+'">'+l+'<input id="'+id+'" class="input" value="'+esc(v)+'"></label>';}
+
+/* ---------- drawer / modal ---------- */
+function drawerHTML(){var b=B(UI.drawer);if(!b)return '';var g=G(b.g),r=R(b.room),n=diff(b.in,b.out);
+var door=b.door?'<div class="card" style="background:var(--ink);color:#fff;gap:6px"><span class="cap" style="color:#C9D8EA">'+(b.door.box?'Key box '+r.box+' code':'Door code · TTLock · '+r.name)+'</span><span class="code" style="color:var(--sky)">'+b.door.code+(b.door.box?'':'#')+'</span><span class="cap" style="color:#C9D8EA">Valid '+fd(b.in)+' '+S.settings.cin+' → '+fd(b.out)+' '+S.settings.cout+(b.door.sent?' · sent '+b.door.sent:'')+'</span></div>':'';
+var acts='';if(b.status==='confirmed')acts+='<button class="btn" data-act="checkin" data-id="'+b.id+'">Check in</button>';if(b.status==='checked_in')acts+='<button class="btn" data-act="checkout" data-id="'+b.id+'">Check out</button>';
+return '<div class="scrim" data-act="closeDrawer"><aside class="drawer" role="dialog" aria-label="Booking '+b.id+'" data-stop="1">'+
+'<div class="mh"><div><div class="cap mono">'+b.id+' · '+esc(b.ref)+'</div><h2>'+esc(g.name)+'</h2><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+chPill(b.ch)+stPill(b)+'</div></div><button class="x" data-act="closeDrawer" aria-label="Close">×</button></div>'+
+'<div class="card" style="gap:4px"><div class="row"><div class="g"><b>'+r.name+'</b><small>'+r.type+' · '+b.adults+' adults</small></div>'+(b.status==='confirmed'?'<select class="input" style="width:auto;padding:6px 10px" data-change="moveRoom" data-id="'+b.id+'" aria-label="Move room">'+S.rooms.map(function(x){return '<option value="'+x.id+'"'+(x.id===b.room?' selected':'')+'>'+x.name+'</option>';}).join('')+'</select>':'')+'</div><div class="row"><div class="g"><b>'+fdw(b.in)+' → '+fdw(b.out)+'</b><small>'+n+' nights · check-in from '+S.settings.cin+'</small></div></div>'+(b.notes?'<div class="row"><div class="g"><b>Guest note</b><small>'+esc(b.notes)+'</small></div></div>':'')+'</div>'+
+'<div class="card" style="gap:8px"><div class="ch"><h3>Online check-in</h3>'+formPill(b)+'</div>'+(b.form==='done'?'<div class="row"><div class="g"><b>'+esc(g.doc)+' · '+g.nat+'</b><small class="mono">'+esc(g.no)+' · read from photo</small></div><span class="pill ok">TM30 ready</span></div>':'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm blue" data-act="sendLink" data-id="'+b.id+'">'+(b.form==='sent'?'Resend link':'Send check-in link')+'</button><button class="btn sm sec" data-act="gvCheckin" data-id="'+b.id+'">Open as guest</button></div>')+'</div>'+
+'<div class="card" style="gap:8px"><div class="ch"><h3>Door access</h3>'+(r.lock==='ttlock'?'<span class="pill">TTLock</span>':'<span class="pill">Key box '+r.box+'</span>')+'</div>'+door+(live(b)&&b.status!=='checked_out'?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="issueCode" data-id="'+b.id+'">'+(b.door?(r.lock==='ttlock'?'Issue new code on TTLock':'Resend box code'):(r.lock==='ttlock'?'Create code on TTLock':'Send box code'))+'</button>'+(b.door?'<button class="btn sm sec" data-act="gvPass" data-id="'+b.id+'">Open stay pass</button>':'')+'</div>':'')+'</div>'+
+'<div class="card" style="gap:4px"><div class="ch"><h3>Payment</h3>'+(bal(b)>0?'<span class="pill bad">Balance '+baht(bal(b))+'</span>':'<span class="pill ok">Paid</span>')+'</div><div class="row"><div class="g">Room · '+n+' nights</div><span class="num">'+baht(b.total)+'</span></div><div class="row"><div class="g">Paid</div><span class="num">'+baht(b.paid)+'</span></div>'+(CH[b.ch].fee?'<div class="row"><div class="g">'+CH[b.ch].n+' commission</div><span class="num">−'+baht(fee(b))+'</span></div><div class="row"><div class="g"><b>Net to you</b></div><b class="num" style="font-weight:500">'+baht(b.total-fee(b))+'</b></div>':'')+(b.pay?'<div class="well" style="padding:12px;display:flex;flex-direction:column;gap:6px;margin-top:6px"><span class="cap">Beam payment link · card, PromptPay, mobile banking</span><span class="mono" style="font-size:12px;word-break:break-all">'+b.pay+'</span><div style="display:flex;gap:8px"><button class="btn sm sec" data-act="copy" data-v="'+b.pay+'">Copy</button><button class="btn sm blue" data-act="markPaid" data-id="'+b.id+'">Guest paid (simulate)</button></div></div>':'')+(bal(b)>0&&live(b)&&!b.pay?'<button class="btn sm blue" style="align-self:flex-start;margin-top:6px" data-act="payLink" data-id="'+b.id+'">Create payment link (Beam)</button>':'')+'</div>'+
+'<div style="display:flex;gap:8px;flex-wrap:wrap">'+acts+(S.chats.some(function(c){return c.b===b.id;})?'<button class="btn sec" data-act="chatSel" data-id="'+b.id+'">Chat</button>':'')+(b.status==='confirmed'?'<button class="btn danger" data-act="askCancel" data-id="'+b.id+'">Cancel booking</button>':'')+'</div>'+
+'</aside></div>';}
+
+function modal(html,cls){UI.modal={html:html,cls:cls||''};paintLayer();}
+function closeModal(){UI.modal=null;paintLayer();}
+function paintLayer(){var h='';if(UI.drawer)h+=drawerHTML();if(UI.modal)h+='<div class="scrim center" data-act="closeModal"><div class="modal '+UI.modal.cls+'" role="dialog" aria-modal="true" data-stop="1">'+UI.modal.html+'</div></div>';document.getElementById('layer').innerHTML=h;}
+function toast(t){var el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=t;document.body.appendChild(el);setTimeout(function(){el.remove();},2600);}
+function mh(t,sub){return '<div class="mh"><div>'+(sub?'<div class="cap">'+sub+'</div>':'')+'<h2>'+t+'</h2></div><button class="x" data-act="closeModal" aria-label="Close">×</button></div>';}
+
+/* guest check-in flow */
+var GV={};
+function gvCheckin(id){var b=B(id)||B('MT-1045');GV={b:b.id,step:0};paintGv();}
+function paintGv(){var b=B(GV.b),g=G(b.g),s=GV.step,h='';
+if(s===0)h='<span class="cap">Online check-in · '+esc(S.settings.name)+'</span><b style="font-size:20px;font-weight:600">Welcome, '+esc(g.name.split(' ')[0])+'</b><div class="card" style="gap:4px;padding:14px"><div class="row"><div class="g"><b>'+R(b.room).name+'</b><small>'+fd(b.in)+' → '+fd(b.out)+'</small></div></div><div class="row"><div class="g"><small>2 steps · about 2 minutes</small></div></div></div><button class="btn blue" data-act="gvNext">Start check-in</button>';
+if(s===1)h='<span class="cap">Step 1 of 2 · Passport</span><b style="font-size:18px;font-weight:600">Just take a photo of your passport</b><div class="cam'+(GV.scanning?' scan':'')+'"><div class="pass"><i></i><span><em style="width:90%"></em><em style="width:70%"></em><em style="width:80%"></em><em style="width:55%"></em></span></div><div class="line"></div></div>'+(GV.read?'<span class="pill ok" style="align-self:flex-start">✓ Read automatically · no typing</span><div class="card" style="padding:10px 14px;gap:0"><div class="row"><div class="g"><small>Name</small></div><b class="mono" style="font-weight:500">'+esc(g.name.toUpperCase())+'</b></div><div class="row"><div class="g"><small>Nationality</small></div><b class="mono" style="font-weight:500">'+g.nat+'</b></div><div class="row"><div class="g"><small>Passport</small></div><b class="mono" style="font-weight:500">'+esc(g.no)+'</b></div></div><button class="btn blue" data-act="gvNext">Looks right</button>':'<button class="btn blue" data-act="gvScan"'+(GV.scanning?' disabled':'')+'>'+(GV.scanning?'Reading…':'Take photo')+'</button>');
+if(s===2)h='<span class="cap">Step 2 of 2 · House rules</span><b style="font-size:18px;font-weight:600">Please read before you arrive</b>'+S.settings.rules.split('\n').map(function(r,i){return '<label class="chk"><input type="checkbox" id="rule'+i+'" data-rule="1"> '+esc(r)+'</label>';}).join('')+'<button class="btn blue" data-act="gvConfirm">Confirm check-in</button><span class="cap" id="ruleMsg"></span>';
+if(s===3)h=passHTML(b,true);
+modal('<div class="phone"><div class="notch"><i></i></div><div class="scr">'+h+'</div></div><button class="btn sec gv-close" data-act="closeModal">Close guest view</button>','bare');}
+function passHTML(b,fresh){var g=G(b.g),r=R(b.room);return (fresh?'<div style="width:56px;height:56px;border-radius:50%;background:var(--ok-bg);display:grid;place-items:center;align-self:center;color:var(--ok);font-size:26px">✓</div><b style="text-align:center;font-size:18px;font-weight:600">You’re checked in, '+esc(g.name.split(' ')[0])+'</b>':'<span class="cap">Your stay pass</span><b style="font-size:18px;font-weight:600">'+esc(S.settings.name)+' · '+r.name+'</b>')+
+'<div class="card" style="padding:14px;gap:4px"><span class="cap">'+(b.door&&b.door.box?'Key box '+r.box+' code':'Main door code')+'</span><span class="code">'+(b.door?b.door.code+(b.door.box?'':'#'):'—')+'</span><span class="cap">'+fd(b.in)+' '+S.settings.cin+' → '+fd(b.out)+' '+S.settings.cout+'</span></div>'+
+'<div class="card" style="padding:12px 14px;flex-direction:row;align-items:center;justify-content:space-between"><span>Wi-Fi · '+esc(S.settings.wifi)+'</span><button class="btn sm sec" data-act="copy" data-v="'+esc(S.settings.wifipw)+'">Copy password</button></div>'+
+'<button class="btn sec" data-act="gvReq" data-id="'+b.id+'" data-w="Clean room">Ask our team to clean your room</button><button class="btn sec" data-act="gvReq" data-id="'+b.id+'" data-w="Fresh towels">Ask for fresh towels</button><button class="btn sec" data-act="gvMsg" data-id="'+b.id+'">Message us</button><span class="cap" style="text-align:center">Check-out by '+S.settings.cout+'</span>';}
+function gvPass(id){var b=B(id)||B('MT-1042');modal('<div class="phone"><div class="notch"><i></i></div><div class="scr">'+passHTML(b,false)+'</div></div><button class="btn sec gv-close" data-act="closeModal">Close guest view</button>','bare');}
+var KS={};
+function gvKiosk(){KS={step:0,room:null};paintKiosk();}
+function paintKiosk(){var s=KS.step,h='';var free=S.rooms.filter(function(r){return !(r.ooo&&r.ooo.from<=TODAY&&r.ooo.to>TODAY)&&!S.bookings.some(function(b){return b.room===r.id&&occupying(b,TODAY);});});
+if(s===0)h='<img src="emblem.png" alt="" style="height:60px;width:auto;align-self:center"><h2 style="text-align:center;font-size:30px;letter-spacing:-.02em">Welcome to '+esc(S.settings.name)+'</h2><div class="grid g2"><button class="card" style="border:0;cursor:pointer;text-align:left" data-act="kWalk"><b style="font-size:18px;font-weight:600">I don’t have a booking</b><span class="cap">See tonight’s free rooms and book here</span></button><button class="card" style="border:0;cursor:pointer;text-align:left" data-act="kHave"><b style="font-size:18px;font-weight:600">I have a booking</b><span class="cap">Find it with your name or booking number</span></button></div>';
+if(s===1)h='<h2 style="font-size:24px">Rooms free tonight</h2>'+(free.length?'<div class="grid g3">'+free.map(function(r){return '<button class="card" style="border:0;cursor:pointer;text-align:left" data-act="kRoom" data-id="'+r.id+'"><b style="font-weight:600">'+r.name+'</b><span class="cap">'+r.type+' · up to '+r.cap+'</span><span class="num" style="font-size:20px">'+baht(rateFor(r.type,TODAY))+'</span></button>';}).join('')+'</div>':'<div class="empty">Fully booked tonight.</div>')+'<button class="btn sec" style="align-self:flex-start" data-act="kBack">Back</button>';
+if(s===2){var r=R(KS.room);h='<h2 style="font-size:24px">Pay for '+r.name+'</h2><div class="grid g2"><div class="card" style="align-items:center"><div style="width:170px;height:170px;border-radius:16px;background:repeating-conic-gradient(#0D294A 0 25%,#fff 0 50%) 0 0/22px 22px;border:10px solid #fff;box-shadow:0 0 0 1px var(--line)"></div><span class="cap">Scan with any banking app · PromptPay via Beam</span></div><div class="card"><div class="row"><div class="g"><b>'+r.name+' · 1 night</b><small>'+fdw(TODAY)+'</small></div><span class="num">'+baht(rateFor(r.type,TODAY))+'</span></div><button class="btn blue" data-act="kPaid">Payment received (simulate)</button></div></div>';}
+if(s===3)h='<div style="width:70px;height:70px;border-radius:50%;background:var(--ok-bg);display:grid;place-items:center;align-self:center;color:var(--ok);font-size:32px">✓</div><h2 style="text-align:center;font-size:26px">You’re booked in '+R(KS.room).name+'</h2><div class="card" style="align-items:center"><span class="cap">Your door code</span><span class="code" style="font-size:44px">'+KS.code+'#</span><span class="cap">Valid until tomorrow '+S.settings.cout+'</span></div><button class="btn sec" style="align-self:center" data-act="kDone">Finish</button>';
+if(s===4)h='<h2 style="font-size:24px">Find your booking</h2><label class="f" for="kq">Name or booking number<input id="kq" class="input" placeholder="e.g. สมชาย or MT-1044"></label><button class="btn blue" style="align-self:flex-start" data-act="kFind">Find</button><div id="kres"></div><button class="btn sec" style="align-self:flex-start" data-act="kBack">Back</button>';
+modal('<div class="tablet">'+h+'</div><button class="btn sec gv-close" data-act="closeModal">Close kiosk</button>','bare');}
+
+/* new booking modal */
+function newBooking(room,day){var opts=S.rooms.map(function(r){return '<option value="'+r.id+'"'+(r.id===room?' selected':'')+'>'+r.name+' · '+r.type+'</option>';}).join('');
+modal(mh('New booking','Direct or walk-in')+'<div class="form"><label class="f" for="nb_name">Guest name<input id="nb_name" class="input" placeholder="Full name"></label><label class="f" for="nb_nat">Nationality<select id="nb_nat" class="input"><option>THA</option><option>GBR</option><option>USA</option><option>CHN</option><option>MYS</option><option>JPN</option><option>KOR</option><option>DEU</option></select></label><label class="f" for="nb_room">Room<select id="nb_room" class="input">'+opts+'</select></label><label class="f" for="nb_ch">Channel<select id="nb_ch" class="input">'+Object.keys(CH).map(function(k){return '<option value="'+k+'"'+(k==='direct'?' selected':'')+'>'+CH[k].n+'</option>';}).join('')+'</select></label><label class="f" for="nb_in">Check-in<input id="nb_in" class="input" type="date" value="'+(day||TODAY)+'"></label><label class="f" for="nb_n">Nights<input id="nb_n" class="input" type="number" min="1" max="30" value="2"></label></div><div class="cap" id="nb_msg"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="saveBooking">Create booking</button></div>');}
+
+/* ---------- actions ---------- */
+var A={};
+A.reset=function(){S=seed();UI.drawer=null;UI.modal=null;UI.chat='MT-1043';paintLayer();render();toast('Demo data reset');};
+A.menu=function(){document.getElementById('side').classList.add('open');document.getElementById('sideScrim').classList.add('open');};
+A.newBooking=function(el){newBooking(el.dataset.room,el.dataset.day);};
+A.saveBooking=function(){var name=document.getElementById('nb_name').value.trim(),room=document.getElementById('nb_room').value,ch=document.getElementById('nb_ch').value,inD=document.getElementById('nb_in').value,n=Math.max(1,parseInt(document.getElementById('nb_n').value,10)||1),out=addDays(inD,n);var msg=document.getElementById('nb_msg');
+if(!name){msg.innerHTML='<span style="color:var(--bad)">Enter the guest’s name.</span>';return;}
+var clash=S.bookings.find(function(b){return live(b)&&b.room===room&&b.in<out&&b.out>inD;});if(clash){msg.innerHTML='<span style="color:var(--bad)">'+R(room).name+' is taken by '+esc(G(clash.g).name)+' on those dates. Pick another room or date.</span>';return;}
+var gid='g'+(S.guests.length+1)+Date.now()%1000;S.guests.push({id:gid,name:name,nat:document.getElementById('nb_nat').value,doc:'Passport',no:'',dob:'',lang:document.getElementById('nb_nat').value==='THA'?'th':'en',phone:'',email:''});
+var id='MT-'+(1053+S.bookings.length);var total=0;for(var i=0;i<n;i++)total+=rateFor(R(room).type,addDays(inD,i));
+S.bookings.push({id:id,ref:id,g:gid,room:room,in:inD,out:out,ch:ch,status:'confirmed',adults:2,total:total,paid:0,form:'none',door:null,pay:null,notes:''});log('Ploy','New '+CH[ch].n+' booking · '+name+' · '+R(room).name);UI.modal=null;UI.drawer=id;paintLayer();render();toast('Booking '+id+' created');};
+A.openB=function(el){UI.drawer=el.dataset.id;UI.modal=null;paintLayer();};
+A.closeDrawer=function(){UI.drawer=null;paintLayer();};
+A.closeModal=closeModal;
+A.checkin=function(el){var b=B(el.dataset.id);b.status='checked_in';if(!b.door){issue(b);}log('Ploy','Checked in '+G(b.g).name+' · '+R(b.room).name);paintLayer();render();toast('Checked in');};
+A.checkout=function(el){var b=B(el.dataset.id);b.status='checked_out';R(b.room).hk='dirty';log('Ploy','Checked out '+G(b.g).name+' · '+R(b.room).name+' marked dirty');paintLayer();render();toast('Checked out · housekeeping notified');};
+A.askCancel=function(el){modal(mh('Cancel this booking?')+'<p>'+esc(G(B(el.dataset.id).g).name)+' · '+R(B(el.dataset.id).room).name+'. The room opens up again on the board.</p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Keep booking</button><button class="btn danger" data-act="doCancel" data-id="'+el.dataset.id+'">Cancel booking</button></div>');};
+A.doCancel=function(el){var b=B(el.dataset.id);b.status='cancelled';log('Ploy','Cancelled '+b.id+' · '+G(b.g).name);UI.modal=null;paintLayer();render();toast('Booking cancelled');};
+function issue(b){var r=R(b.room);if(r.lock==='box'){b.door={code:r.boxCode,box:true,sent:now()};log('System','Key box '+r.box+' code sent to '+G(b.g).name);}else{b.door={code:rnd(4),sent:now()};log('System','Door code '+b.door.code+'# created on TTLock for '+r.name+' · '+G(b.g).name);}}
+A.issueCode=function(el){var b=B(el.dataset.id);issue(b);paintLayer();render();toast(R(b.room).lock==='ttlock'?'New code created on TTLock and sent':'Box code sent to guest');};
+A.sendLink=function(el){var b=B(el.dataset.id);b.form='sent';log('System','Check-in link sent to '+G(b.g).name);paintLayer();render();toast('Check-in link sent by email and chat');};
+A.payLink=function(el){var b=B(el.dataset.id);b.pay='https://pay.beamcheckout.com/mounta/'+b.id.toLowerCase()+'-'+rnd(5);log('Ploy','Beam payment link created for '+b.id+' · '+baht(bal(b)));paintLayer();toast('Payment link created');};
+A.markPaid=function(el){var b=B(el.dataset.id);log('Beam','Payment received '+baht(bal(b))+' · '+b.id);b.paid=b.total;b.pay=null;paintLayer();render();toast('Payment received via Beam');};
+A.moveRoom=function(el){var b=B(el.dataset.id),to=el.value;var clash=S.bookings.find(function(x){return x!==b&&live(x)&&x.room===to&&x.in<b.out&&x.out>b.in;});if(clash){toast(R(to).name+' is taken on those dates');paintLayer();return;}log('Ploy','Moved '+G(b.g).name+' from '+R(b.room).name+' to '+R(to).name);b.room=to;if(b.door){b.door=null;}paintLayer();render();toast('Moved. Issue a new code for the new room.');};
+A.copy=function(el){var v=el.dataset.v;try{navigator.clipboard.writeText(v).then(function(){toast('Copied');},function(){toast(v);});}catch(e){toast(v);}};
+A.bFilter=function(el){UI.bFilter=el.dataset.v;render();};
+A.calPrev=function(){UI.calStart-=7;render();};A.calNext=function(){UI.calStart+=7;render();};A.calToday=function(){UI.calStart=0;render();};
+A.chatSel=function(el){UI.chat=el.dataset.id;UI.drawer=null;paintLayer();go('chat');};
+A.qr=function(el){document.getElementById('msgIn').value=QR[el.dataset.k].th;document.getElementById('msgIn').dataset.k=el.dataset.k;document.getElementById('msgIn').focus();};
+A.send=function(){var inp=document.getElementById('msgIn'),t=inp.value.trim();if(!t)return;var c=S.chats.find(function(x){return x.b===UI.chat;}),g=G(B(c.b).g);var k=inp.dataset.k,tr=k&&QR[k].th===t?QR[k][g.lang==='th'?'en':g.lang]:t;c.m.push({f:'me',t:t,tr:tr,at:now()});log('Ploy','Replied to '+g.name);render();
+setTimeout(function(){var th=THANKS[g.lang]||THANKS.en;c.m.push({f:'g',t:th[0],tr:th[1],at:now()});if(UI.route==='chat')render();},1600);};
+A.openG=function(el){var g=G(el.dataset.id),st=S.bookings.filter(function(b){return b.g===g.id;});modal(mh(esc(g.name),g.nat+' · '+g.lang.toUpperCase())+'<div class="card" style="padding:14px 16px;gap:4px;background:var(--well)"><div class="row"><div class="g"><small>Document</small></div><span class="mono">'+(g.no?esc(g.doc)+' · '+esc(g.no):'Not yet provided')+'</span></div><div class="row"><div class="g"><small>Date of birth</small></div><span class="num">'+(g.dob||'—')+'</span></div><div class="row"><div class="g"><small>Phone</small></div><span>'+esc(g.phone||'—')+'</span></div><div class="row"><div class="g"><small>Email</small></div><span>'+esc(g.email||'—')+'</span></div></div><h3 style="font-size:15px">Stays</h3>'+st.map(function(b){return '<div class="row"><div class="g"><b>'+R(b.room).name+' · '+fd(b.in)+' → '+fd(b.out)+'</b><small>'+CH[b.ch].n+'</small></div>'+stPill(b)+'</div>';}).join(''));};
+A.editRate=function(el){var k=el.dataset.k,p=k.split('|');modal(mh(p[0]+' · '+fdw(p[1]),'Direct and agent rate')+'<label class="f" for="rv">Price per night (฿)<input id="rv" class="input num" type="number" value="'+rateFor(p[0],p[1])+'"></label><label class="chk" style="background:var(--well)"><input type="checkbox" id="rc"'+(S.closed[k]?' checked':'')+'> Close this date for direct and agent bookings</label><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="saveRate" data-k="'+k+'">Save</button></div>');};
+A.saveRate=function(el){var k=el.dataset.k,v=parseInt(document.getElementById('rv').value,10);if(v>0)S.rateOv[k]=v;S.closed[k]=document.getElementById('rc').checked;log('Ploy','Rate '+k.replace('|',' ')+' set to '+baht(v));closeModal();render();toast('Rate saved');};
+A.bulkRate=function(){modal(mh('Set a price range')+'<div class="form"><label class="f" for="br_t">Room type<select id="br_t" class="input">'+Object.keys(S.rates).map(function(t){return '<option>'+t+'</option>';}).join('')+'</select></label><label class="f" for="br_a">From<input id="br_a" type="date" class="input" value="'+D(7)+'"></label><label class="f" for="br_b">To<input id="br_b" type="date" class="input" value="'+D(13)+'"></label><label class="f" for="br_p">Price (฿)<input id="br_p" type="number" class="input" value="1800"></label></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="saveBulk">Apply</button></div>');};
+A.saveBulk=function(){var t=document.getElementById('br_t').value,a=document.getElementById('br_a').value,b=document.getElementById('br_b').value,p=parseInt(document.getElementById('br_p').value,10);var n=0;for(var d=a;d<=b&&n<90;d=addDays(d,1)){S.rateOv[t+'|'+d]=p;n++;}log('Ploy',t+' '+fd(a)+'–'+fd(b)+' set to '+baht(p));closeModal();render();toast(n+' dates updated');};
+A.sync=function(el){var c=S.channels.find(function(x){return x.id===el.dataset.id;});el.textContent='Syncing…';el.disabled=true;setTimeout(function(){c.last=now();log('System',CH[c.id].n+' synced · no changes');render();toast(CH[c.id].n+' synced');},900);};
+A.syncAll=function(){S.channels.forEach(function(c){c.last=now();});log('System','All channels synced');render();toast('All channels synced');};
+A.toggleEmail=function(el){var c=S.channels.find(function(x){return x.id===el.dataset.id;});c.email=!c.email;render();};
+A.roomTab=function(el){UI.roomTab=el.dataset.v;render();};
+A.newBox=function(el){var r=R(el.dataset.id);r.boxCode=rnd(4);S.bookings.forEach(function(b){if(b.room===r.id&&b.door&&b.door.box&&occupying(b,TODAY))b.door.code=r.boxCode;});log('Ploy','New code for key box '+r.box+': '+r.boxCode);render();toast('Key box '+r.box+' code changed to '+r.boxCode);};
+A.copyAgent=function(){A.copy({dataset:{v:'https://app.mounta.co/agent/baan-doi-loft'}});};
+A.addAgent=function(){modal(mh('Add travel agent')+'<div class="form"><label class="f" for="ag_n">Company<input id="ag_n" class="input"></label><label class="f" for="ag_c">Contact<input id="ag_c" class="input"></label><label class="f" for="ag_d">Agent discount %<input id="ag_d" class="input" type="number" value="10"></label></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="saveAgent">Add</button></div>');};
+A.saveAgent=function(){var n=document.getElementById('ag_n').value.trim();if(!n)return;S.agents.push({name:n,contact:document.getElementById('ag_c').value,disc:parseInt(document.getElementById('ag_d').value,10)||0,bk:0});closeModal();render();toast('Agent added');};
+A.tm30Export=function(){var list=S.bookings.filter(function(b){return live(b)&&b.in<=TODAY&&b.out>=TODAY&&b.status!=='checked_out'&&G(b.g).nat!=='THA'&&b.form==='done';});var csv='first_name,last_name,nationality,passport_no,date_of_birth,arrival,departure,room\n'+list.map(function(b){var g=G(b.g),p=g.name.split(' ');return [p[0],p.slice(1).join(' '),g.nat,g.no,g.dob,b.in,b.out,R(b.room).name].join(',');}).join('\n');
+log('Ploy','TM30 file exported · '+list.length+' guests');modal(mh('TM30 file · '+fd(TODAY),list.length+' foreign guests')+'<pre class="csv">'+esc(csv)+'</pre><span class="cap">In the real system this downloads as a file ready for the immigration TM30 upload.</span><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="copy" data-v="'+esc(csv)+'">Copy</button><button class="btn" data-act="closeModal">Done</button></div>','wide');};
+A.rr3=function(el){var b=B(el.dataset.id),g=G(b.g);modal(mh('ร.ร.3 · บัตรทะเบียนผู้พัก','Guest registration card')+rr3Card(b,g)+'<div style="display:flex;justify-content:flex-end"><button class="btn" data-act="closeModal">Done</button></div>','wide');};
+A.rr3All=function(){var list=S.bookings.filter(function(b){return live(b)&&b.in<=TODAY&&b.out>=TODAY&&b.status!=='checked_out'&&b.form==='done';});modal(mh('ร.ร.3 cards · '+fd(TODAY),list.length+' cards')+list.map(function(b){return rr3Card(b,G(b.g));}).join('')+'<div style="display:flex;justify-content:flex-end"><button class="btn" data-act="closeModal">Done</button></div>','wide');};
+function rr3Card(b,g){return '<div class="rr3"><div class="full" style="display:flex;justify-content:space-between"><b>'+esc(S.settings.name)+'</b><span class="mono">ร.ร.3 · '+b.id+'</span></div><div><span>ชื่อ-สกุล / Name</span>'+esc(g.name)+'</div><div><span>สัญชาติ / Nationality</span>'+g.nat+'</div><div><span>เอกสาร / Document</span>'+esc(g.doc)+' '+esc(g.no)+'</div><div><span>วันเกิด / Date of birth</span>'+(g.dob||'—')+'</div><div><span>ห้อง / Room</span>'+R(b.room).name+'</div><div><span>วันเข้า-ออก / Stay</span>'+fd(b.in)+' → '+fd(b.out)+'</div><div class="full"><span>ที่อยู่ที่พัก / Address</span>'+esc(S.settings.addr)+'</div></div>';}
+A.hkTab=function(el){UI.hkTab=el.dataset.v;render();};
+A.hkNext=function(el){var r=R(el.dataset.id),nx={dirty:'cleaning',cleaning:'clean',clean:'inspected',inspected:'dirty'};r.hk=nx[r.hk];if(r.hk==='clean')r.photos=4;log(r.hkBy,r.name+' → '+r.hk);render();};
+A.endOoo=function(el){var r=R(el.dataset.id);r.hk='dirty';r.ooo=null;log('Ploy',r.name+' back in service');render();toast(r.name+' is back in service');};
+A.reqDone=function(el){S.requests[+el.dataset.i].done=true;render();};
+A.lq=function(el){var k=el.dataset.k;S.laundry.cur[k]=Math.max(0,S.laundry.cur[k]+(+el.dataset.d));render();};
+A.sendLaundry=function(){var c=S.laundry.cur;S.laundry.hist.unshift({date:TODAY,items:Object.keys(c).filter(function(k){return c[k];}).map(function(k){return k+' '+c[k];}).join(' · '),status:'At shop'});log('Noi','Laundry sent to shop');Object.keys(c).forEach(function(k){c[k]=0;});render();toast('Count sent to the laundry shop by LINE');};
+A.lReturn=function(el){S.laundry.hist[+el.dataset.i].status='Returned';render();};
+A.closeDay=function(){S.audit.closed=now();log('Ploy','Day closed · night audit '+fd(TODAY));render();toast('Day closed');};
+A.payTab=function(el){UI.payTab=el.dataset.v;render();};
+A.importPayout=function(){var src=S.payout.src;var mine=S.bookings.filter(function(b){return b.ch===src&&live(b)&&b.paid>0;}).slice(0,6);var rows=mine.map(function(b){return {ref:({airbnb:'G-',booking:'BKP-',trip:'TRP-'}[src])+rnd(6),n:G(b.g).name,s:fd(b.in)+' → '+fd(b.out),a:b.total-fee(b),b:b.id};});rows.push({ref:({airbnb:'G-',booking:'BKP-',trip:'TRP-'}[src])+rnd(6),n:'Resolution adjustment',s:'—',a:-350,b:null});S.payout.rows=rows;log('Kwan','Imported '+CH[src].n+' payout · '+rows.length+' lines');render();toast('Matched '+(rows.length-1)+' of '+rows.length+' lines');};
+A.importBank=function(){S.bank=[{d:D(-1),t:'AIRBNB PAYMENTS UK',a:4080,m:'Airbnb payout · MT-1031'},{d:D(-1),t:'BEAM CHECKOUT',a:3400,m:'Beam · 2 payments'},{d:D(-2),t:'BOOKING.COM BV',a:3570,m:'Booking.com payout · MT-1029'},{d:D(-3),t:'TRANSFER FROM NOK S.',a:1200,m:null},{d:D(-5),t:'PEA ELECTRICITY',a:-6420,m:'Expense · Electricity Sep'},{d:D(-6),t:'ATM WITHDRAWAL',a:-2000,m:null}];log('Kwan','Imported KBank statement');render();toast('2 lines need a look');};
+A.addExpense=function(){modal(mh('Add expense')+'<div class="form"><label class="f" for="ex_d">Date<input id="ex_d" type="date" class="input" value="'+TODAY+'"></label><label class="f" for="ex_c">Category<select id="ex_c" class="input">'+['Supplies','Laundry','Utilities','Repairs','Staff','Internet','Marketing'].map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></label><label class="f" for="ex_t">Description<input id="ex_t" class="input"></label><label class="f" for="ex_a">Amount (฿)<input id="ex_a" type="number" class="input"></label></div><label class="f" for="ex_s">Slip photo<input id="ex_s" type="file" accept="image/*" class="input"></label><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="saveExpense">Save</button></div>');};
+A.saveExpense=function(){var a=parseInt(document.getElementById('ex_a').value,10),t=document.getElementById('ex_t').value.trim();if(!a||!t){toast('Enter a description and amount');return;}S.expenses.unshift({date:document.getElementById('ex_d').value,cat:document.getElementById('ex_c').value,desc:t,amt:a,slip:!!document.getElementById('ex_s').files.length});log('Ploy','Expense '+t+' '+baht(a));closeModal();render();toast('Expense saved');};
+A.exportAcc=function(){var csv='date,category,description,amount,slip\n'+S.expenses.map(function(e){return [e.date,e.cat,'"'+e.desc+'"',e.amt,e.slip?'yes':'no'].join(',');}).join('\n');modal(mh('Export for accountant','Expenses · October 2026')+'<pre class="csv">'+esc(csv)+'</pre><span class="cap">The real system exports a package with slips, or sends it to Google Sheets.</span><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="copy" data-v="'+esc(csv)+'">Copy</button><button class="btn" data-act="closeModal">Done</button></div>','wide');};
+A.repTab=function(el){UI.repTab=el.dataset.v;render();};
+A.gvCheckin=function(el){UI.drawer=null;gvCheckin(el.dataset.id);};
+A.gvNext=function(){GV.step++;GV.read=false;paintGv();};
+A.gvScan=function(){GV.scanning=true;paintGv();setTimeout(function(){GV.scanning=false;GV.read=true;if(UI.modal)paintGv();},1400);};
+A.gvConfirm=function(){var all=Array.prototype.every.call(document.querySelectorAll('[data-rule]'),function(c){return c.checked;});if(!all){document.getElementById('ruleMsg').textContent='Tick every rule to continue.';return;}var b=B(GV.b);b.form='done';if(!b.door)issue(b);log(G(b.g).name,'Completed online check-in · passport read from photo');GV.step=3;paintGv();render();};
+A.gvPass=function(el){UI.drawer=null;gvPass(el.dataset.id);};
+A.gvReq=function(el){var b=B(el.dataset.id);S.requests.unshift({room:b.room,what:el.dataset.w,at:now(),done:false});log(G(b.g).name,'Requested '+el.dataset.w.toLowerCase()+' from stay pass');render();toast('Request sent to housekeeping');};
+A.gvMsg=function(el){var b=B(el.dataset.id),c=S.chats.find(function(x){return x.b===b.id;});if(!c){c={b:b.id,unread:0,m:[]};S.chats.unshift(c);}c.m.push({f:'g',t:'Hello! Where can I buy a SIM card nearby?',tr:'สวัสดี ซื้อซิมการ์ดใกล้ๆ ได้ที่ไหน',at:now()});c.unread++;render();toast('Message sent · see Chat');};
+A.gvKiosk=function(){gvKiosk();};
+A.kWalk=function(){KS.step=1;paintKiosk();};A.kHave=function(){KS.step=4;paintKiosk();};A.kBack=function(){KS.step=0;paintKiosk();};
+A.kRoom=function(el){KS.room=el.dataset.id;KS.step=2;paintKiosk();};
+A.kPaid=function(){var r=R(KS.room),gid='gk'+Date.now()%10000,id='MT-'+(1053+S.bookings.length);S.guests.push({id:gid,name:'Walk-in guest',nat:'THA',doc:'Thai ID',no:'',dob:'',lang:'th',phone:'',email:''});var b={id:id,ref:id,g:gid,room:r.id,in:TODAY,out:D(1),ch:'direct',status:'checked_in',adults:1,total:rateFor(r.type,TODAY),paid:rateFor(r.type,TODAY),form:'none',door:null,pay:null,notes:'Walk-in at kiosk'};S.bookings.push(b);issue(b);KS.code=b.door.code;log('Kiosk','Walk-in booked '+r.name+' · paid by PromptPay');KS.step=3;paintKiosk();render();};
+A.kDone=function(){closeModal();};
+A.kFind=function(){var q=document.getElementById('kq').value.trim().toLowerCase();var b=q&&S.bookings.find(function(x){return live(x)&&x.in===TODAY&&(G(x.g).name.toLowerCase().indexOf(q)>=0||x.id.toLowerCase()===q);});document.getElementById('kres').innerHTML=b?'<div class="card"><b style="font-weight:600">'+esc(G(b.g).name)+' · '+R(b.room).name+'</b><span class="cap">'+fd(b.in)+' → '+fd(b.out)+'</span><button class="btn blue" style="align-self:flex-start" data-act="kCheck" data-id="'+b.id+'">Check in now</button></div>':'<div class="empty">No arrival today matches. Try สมชาย or MT-1044.</div>';};
+A.kCheck=function(el){var b=B(el.dataset.id);b.status='checked_in';if(!b.door)issue(b);KS.room=b.room;KS.code=b.door.code;log('Kiosk','Checked in '+G(b.g).name);KS.step=3;paintKiosk();render();};
+A.staffSel=function(el){UI.staffSel=+el.dataset.i;render();};
+A.perm=function(el){var s=S.staff[UI.staffSel],m=el.dataset.m,i=s.perms.indexOf(m);if(i>=0)s.perms.splice(i,1);else s.perms.push(m);log('Ploy',s.name+': '+m+(i>=0?' removed':' allowed'));render();};
+A.addStaff=function(){modal(mh('Add staff')+'<div class="form"><label class="f" for="st_n">Name<input id="st_n" class="input"></label><label class="f" for="st_r">Role<select id="st_r" class="input"><option>Front desk</option><option>Housekeeper</option><option>Accountant</option><option>Manager</option></select></label></div><span class="cap">They get a sign-in link by email. You choose their menus next.</span><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn sec" data-act="closeModal">Cancel</button><button class="btn" data-act="saveStaff">Add</button></div>');};
+A.saveStaff=function(){var n=document.getElementById('st_n').value.trim();if(!n)return;var r=document.getElementById('st_r').value;S.staff.push({name:n,role:r,perms:r==='Housekeeper'?['Housekeeping','Laundry']:['Overview','Bookings']});UI.staffSel=S.staff.length-1;log('Ploy','Added staff '+n);closeModal();render();toast('Invite sent to '+n);};
+A.saveSettings=function(){var s=S.settings;['name','addr','cin','cout','wifi','wifipw'].forEach(function(k){s[k]=document.getElementById('s_'+k).value;});s.rules=document.getElementById('s_rules').value;log('Ploy','Settings saved');toast('Settings saved');render();};
+
+/* ---------- routing ---------- */
+function go(r){if(!P[r])r='overview';UI.route=r;try{if(location.hash.slice(1)!==r)history.replaceState(null,'','#'+r);}catch(e){}document.getElementById('side').classList.remove('open');document.getElementById('sideScrim').classList.remove('open');render();window.scrollTo(0,0);}
+function render(){renderNav();document.getElementById('main').innerHTML=P[UI.route]();var m=document.getElementById('msgs');if(m)m.scrollTop=m.scrollHeight;}
+
+document.addEventListener('click',function(e){
+var stop=e.target.closest('[data-stop]');var el=e.target.closest('[data-act],[data-go]');
+if(!el){return;}
+if(stop&&!stop.contains(el))return;
+if((el.dataset.act==='closeDrawer'||el.dataset.act==='closeModal')&&el.classList.contains('scrim')&&e.target!==el)return;
+if(el.tagName==='SELECT')return;
+if(el.dataset.go){go(el.dataset.go);return;}
+var f=A[el.dataset.act];if(f){e.preventDefault();f(el);}});
+document.addEventListener('change',function(e){var el=e.target;var k=el.dataset.change;if(!k)return;
+if(k==='bCh'){UI.bCh=el.value;render();}if(k==='hkBy'){R(el.dataset.id).hkBy=el.value;}if(k==='psrc'){S.payout.src=el.value;S.payout.rows=null;render();}if(k==='moveRoom')A.moveRoom(el);});
+document.addEventListener('input',function(e){var el=e.target;if(el.id==='q'){UI.q=el.value;if(UI.route!=='bookings'&&UI.route!=='guests')UI.route='bookings';render();el.focus();}if(el.dataset.input==='counted'){S.audit.counted=el.value.replace(/[^0-9]/g,'');var v=S.audit.counted===''?null:Number(S.audit.counted)-6200;document.getElementById('variance').innerHTML=v===null?'Count the drawer and enter the amount.':v===0?'<span style="color:var(--ok)">Matches expected cash.</span>':'<span style="color:var(--bad)">Variance '+(v>0?'+':'−')+baht(Math.abs(v))+'</span>';}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(UI.modal)closeModal();else if(UI.drawer)A.closeDrawer();}if(e.key==='Enter'&&e.target.id==='msgIn')A.send();if(e.key==='Enter'&&e.target.id==='kq')A.kFind();});
+document.getElementById('burger').addEventListener('click',A.menu);
+document.getElementById('sideScrim').addEventListener('click',function(){document.getElementById('side').classList.remove('open');this.classList.remove('open');});
+window.addEventListener('hashchange',function(){var r=location.hash.slice(1);if(r&&r!==UI.route&&P[r])go(r);});
+var start=location.hash.slice(1);go(P[start]?start:'overview');
+})();
+</script>
+</body>
+</html>
