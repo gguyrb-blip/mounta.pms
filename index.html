@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mounta PMS</title>
+<meta name="description" content="Mounta PMS ระบบจัดการที่พักบนคลาวด์ สำหรับ Airbnb โฮสเทล และบูทีคโฮเทล: รวม OTA, เช็คอินออนไลน์, รหัสประตู, Stay pass, ตม.30 และบัญชี">
+<link rel="icon" href="emblem.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+SC:wght@400&display=swap">
+<style>
+/* Layout: one guest's stay runs down the page as a timeline; each stop shows the real Admin V2 screen that handles it. Light, single theme by choice: the brand is sky and navy on white. */
+:root{
+  --navy:#0D294A;
+  --blue:#1774ED;
+  --sky:#5CBBFF;
+  --pale:#EEF6FF;
+  --ground:#F1F5FA;
+  --line:#E2E9F2;
+  --muted:#5B6B82;
+  --white:#FFFFFF;
+  --ok:#2E7D4F;
+  --ok-bg:#DDF3E6;
+  --warn:#8A5A12;
+  --warn-bg:#FFF0D6;
+  --display:'Lexend','Anuphan',system-ui,sans-serif;
+  --body:'IBM Plex Sans Thai','Anuphan',system-ui,sans-serif;
+  --ui:'Geist','IBM Plex Sans Thai',system-ui,sans-serif;
+  --mono:'Geist Mono','IBM Plex Sans Thai',ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--white);color:var(--navy);font-family:var(--body);font-size:17px;line-height:1.65}
+img{max-width:100%;display:block}
+a{color:var(--blue)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--sky);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.015em}
+p{margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.lead{font-size:19px;color:var(--muted);max-width:60ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 24px;border-radius:999px;font-family:var(--body);font-weight:600;font-size:16px;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn.primary{background:var(--navy);color:var(--white)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 10px 24px -10px rgba(13,41,74,.6)}
+.btn.ghost{background:var(--white);color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--navy)}
+
+/* nav */
+header.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:20px;min-height:72px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--navy)}
+.brand img{height:34px;width:auto}
+.brand b{font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:.14em}
+nav.links{display:flex;gap:26px;margin-left:auto;font-size:15px}
+nav.links a{color:var(--navy);text-decoration:none}
+nav.links a:hover{color:var(--blue)}
+@media (max-width:880px){nav.links{display:none}header.top .btn{margin-left:auto}}
+
+/* hero */
+.hero{padding-block:72px 40px;background:linear-gradient(180deg,var(--pale) 0%,var(--white) 100%)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px;align-items:center}
+.hero h1{font-size:clamp(38px,5vw,62px);line-height:1.12;font-weight:600}
+.hero h1 em{font-style:normal;color:var(--blue);white-space:nowrap}
+.hero .lead{margin-top:20px}
+.hero .ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.hero .note{margin-top:18px;font-size:14px;color:var(--muted)}
+.stage{position:relative;padding-bottom:40px}
+@media (max-width:980px){.hero .wrap{grid-template-columns:1fr}}
+
+/* V2 UI kit, used by every mockup */
+.ui{font-family:var(--ui);color:var(--navy);font-size:13px;line-height:1.45}
+.browser{background:var(--ground);border-radius:22px;box-shadow:0 40px 80px -30px rgba(13,41,74,.35),0 0 0 1px var(--line);overflow:hidden}
+.browser .bar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:var(--white);border-bottom:1px solid var(--line)}
+.browser .bar i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.browser .bar span{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--ground);padding:3px 12px;border-radius:999px}
+.app{display:grid;grid-template-columns:170px minmax(0,1fr);gap:12px;padding:12px}
+.side{background:var(--white);border-radius:20px;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.side .lg{display:flex;align-items:center;gap:6px;padding:0 6px 10px;font-weight:600;letter-spacing:.12em;font-size:12px}
+.side .lg img{height:20px;width:auto}
+.ni{padding:7px 10px;border-radius:999px;font-size:12px;color:var(--navy)}
+.ni.on{background:var(--navy);color:var(--white)}
+.grp{font-size:10.5px;color:var(--muted);padding:8px 10px 2px}
+.main{display:flex;flex-direction:column;gap:10px;min-width:0}
+.greet small{display:block;color:var(--muted);font-size:11px}
+.greet h4{margin:0;font-family:var(--ui);font-weight:400;font-size:24px;letter-spacing:-.025em}
+.greet h4 span{color:#8497B0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{background:var(--white);border-radius:16px;padding:10px 12px}
+.stat .l{font-size:10.5px;color:var(--muted)}
+.stat .v{font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .s{font-size:10px;color:var(--muted)}
+.card{background:var(--white);border-radius:20px;padding:14px 16px}
+.card h5{margin:0 0 10px;font-family:var(--ui);font-size:13px;font-weight:500;display:flex;justify-content:space-between;gap:8px}
+.card h5 small{font-weight:400;color:var(--muted)}
+.well{background:#F4F7FB;border-radius:14px;padding:10px 12px}
+.pill{display:inline-block;font-size:10.5px;padding:3px 9px;border-radius:999px;white-space:nowrap;background:#F4F7FB;color:var(--navy)}
+.pill.ink{background:var(--navy);color:var(--white)}
+.pill.act{background:#E3F0FF;color:#0958AE}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #EBF0F6}
+.row:last-child{border-bottom:0}
+.row .gr{flex:1;min-width:0}
+.row .gr b{font-weight:500;display:block}
+.row .gr small{color:var(--muted);font-size:11px}
+.board{display:grid;grid-template-columns:62px repeat(7,minmax(0,1fr));grid-auto-rows:26px;gap:4px 3px;font-size:10.5px}
+.board .d{color:var(--muted);text-align:center;align-self:center}
+.board .r{font-weight:500;align-self:center}
+.board .b{border-radius:7px;padding:4px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.ab{background:#FFE3E6;color:#A1162B}
+.bc{background:#DDE8FF;color:#123C99}
+.ag{background:#E9E1FF;color:#4B2A9E}
+.tc{background:#DAF1F8;color:#0E5D78}
+.dr{background:#E3F0FF;color:#0958AE}
+.phone{width:250px;background:var(--ground);border-radius:38px;border:9px solid #06162A;box-shadow:0 30px 60px -20px rgba(13,41,74,.5);overflow:hidden}
+.phone .notch{height:22px;display:flex;justify-content:center;align-items:center}
+.phone .notch i{width:70px;height:16px;border-radius:10px;background:#06162A}
+.phone .in{padding:6px 12px 14px;display:flex;flex-direction:column;gap:8px}
+.code{font-family:var(--mono);font-size:30px;letter-spacing:.18em;font-weight:500}
+.stage .phone{position:absolute;left:-36px;bottom:0}
+@media (max-width:980px){.stage .phone{left:auto;right:8px}}
+@media (max-width:640px){.app{grid-template-columns:1fr}.side{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stage .phone{position:relative;right:auto;margin:-60px auto 0}}
+
+/* partners strip */
+.strip{padding-block:28px;border-block:1px solid var(--line)}
+.strip .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 30px;justify-content:center;font-family:var(--display);font-size:18px;color:var(--muted)}
+.strip .wrap span:first-child{font-family:var(--body);font-size:14px;width:100%;text-align:center}
+
+/* section heads */
+section{padding-block:96px}
+.head{display:flex;flex-direction:column;gap:14px;max-width:760px;margin-bottom:56px}
+.head h2{font-size:clamp(30px,3.6vw,46px);line-height:1.18;font-weight:600}
+
+/* journey timeline */
+.journey{position:relative}
+.journey::before{content:"";position:absolute;left:94px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--sky),var(--blue))}
+.stop{display:grid;grid-template-columns:190px minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start;padding-block:36px}
+.time{position:relative;text-align:right;padding-right:120px}
+.time b{display:block;font-family:var(--mono);font-weight:500;font-size:34px;line-height:1;color:var(--navy);letter-spacing:-.02em;position:absolute;right:112px;white-space:nowrap}
+.time i{position:absolute;left:86px;top:10px;width:18px;height:18px;border-radius:50%;background:var(--white);border:4px solid var(--blue)}
+.time small{position:absolute;right:112px;top:40px;font-size:13px;color:var(--muted);white-space:nowrap}
+.stop .txt h3{font-size:28px;font-weight:600;line-height:1.25}
+.stop .txt p{margin-top:12px;color:var(--muted)}
+.ticks{list-style:none;padding:0;margin:18px 0 0;display:flex;flex-direction:column;gap:9px;font-size:16px}
+.ticks li{display:flex;gap:10px;align-items:flex-start}
+.ticks li::before{content:"";flex:none;width:20px;height:20px;margin-top:4px;border-radius:50%;background:var(--pale) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%231774ED' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px no-repeat}
+.shot{background:var(--ground);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 0 1px var(--line)}
+.shot.center{align-items:center}
+@media (max-width:980px){
+  .journey::before{left:9px}
+  .stop{grid-template-columns:1fr;gap:20px;padding-left:40px}
+  .time{text-align:left;padding:0;height:62px}
+  .time b,.time small{position:static}
+  .time small{display:block;margin-top:6px}
+  .time i{left:-40px;top:8px}
+}
+
+/* law band */
+.law{background:var(--navy);color:var(--white)}
+.law .head p{color:#C9D8EA}
+.law .eyebrow{color:var(--sky)}
+.law .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}
+.law .txt{display:flex;flex-direction:column;gap:22px}
+.law .item{display:grid;grid-template-columns:84px minmax(0,1fr);gap:18px;padding:22px;border-radius:24px;background:#123A66}
+.law .item b{font-family:var(--display);font-size:30px;font-weight:500;color:var(--sky);line-height:1}
+.law .item h3{font-size:21px;font-weight:600}
+.law .item p{color:#C9D8EA;font-size:16px;margin-top:6px}
+.law .shot{box-shadow:none}
+@media (max-width:900px){.law .grid{grid-template-columns:1fr}}
+table.t{width:100%;border-collapse:collapse;font-size:11.5px}
+table.t th{text-align:left;font-weight:500;color:var(--muted);padding:0 8px 8px 0;border-bottom:1px solid #EBF0F6;white-space:nowrap}
+table.t td{padding:8px 8px 8px 0;border-bottom:1px solid #EBF0F6;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+
+/* all modules */
+.mods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:980px){.mods{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.mods{grid-template-columns:1fr}}
+.mod{border-radius:24px;padding:24px;background:var(--ground)}
+.mod h3{font-size:19px;font-weight:600;display:flex;align-items:center;gap:10px}
+.mod h3 span{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);margin-left:auto}
+.mod ul{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.mod li{font-size:15px;line-height:1.5}
+.mod li b{display:block;font-family:var(--ui);font-weight:600;font-size:15px}
+.mod li small{color:var(--muted);font-size:14px}
+
+/* mobile section */
+.mobile .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.phones{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.phones .phone{width:236px}
+.tab{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;padding:4px;border-radius:999px;background:var(--white);box-shadow:0 10px 24px -10px rgba(13,41,74,.35);font-size:10px;text-align:center}
+.tab span{padding:8px 0;border-radius:999px;color:var(--muted)}
+.tab span.on{background:var(--navy);color:var(--white)}
+@media (max-width:900px){.mobile .wrap{grid-template-columns:1fr}}
+
+/* chat translate demo */
+.langs{display:flex;gap:6px}
+.langs button{font-family:var(--ui);font-size:11px;border:0;border-radius:999px;padding:5px 10px;background:#F4F7FB;color:var(--navy);cursor:pointer;min-height:28px}
+.langs button[aria-pressed="true"]{background:var(--navy);color:var(--white)}
+.bub{max-width:85%;padding:9px 12px;border-radius:16px 16px 16px 5px;background:#F4F7FB;font-size:12.5px}
+.bub.me{align-self:flex-end;border-radius:16px 16px 5px 16px;background:var(--navy);color:var(--white)}
+.bub small{display:block;margin-top:5px;padding-top:5px;border-top:1px solid rgba(91,107,130,.25);font-size:11px;opacity:.8}
+
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:stretch}
+.plan{border-radius:28px;padding:30px;background:var(--ground);display:flex;flex-direction:column;gap:16px}
+.plan.hl{background:var(--navy);color:var(--white)}
+.plan h3{font-size:22px;font-weight:600}
+.plan .p{font-family:var(--display);font-size:52px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.plan .p small{font-family:var(--body);font-size:15px;font-weight:400;opacity:.75;letter-spacing:0}
+.plan .who{font-size:15px;opacity:.8}
+.plan ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:15px;flex:1}
+.plan li::before{content:"✓";color:var(--blue);font-weight:700;margin-right:8px}
+.plan.hl li::before{color:var(--sky)}
+.plan .btn{align-self:stretch}
+.plan.hl .btn{background:var(--sky);color:var(--navy)}
+.tag{align-self:flex-start;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;background:var(--sky);color:var(--navy)}
+@media (max-width:900px){.plans{grid-template-columns:1fr}}
+
+/* faq */
+.faq{max-width:820px;display:flex;flex-direction:column;gap:12px}
+details{border-radius:20px;background:var(--ground);padding:0 24px}
+summary{cursor:pointer;list-style:none;padding:20px 0;font-weight:600;font-size:18px;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--mono);font-size:22px;line-height:1;color:var(--blue)}
+details[open] summary::after{content:"−"}
+details p{padding-bottom:22px;color:var(--muted)}
+
+/* cta + footer */
+.cta{background:linear-gradient(180deg,var(--white),var(--pale));text-align:center}
+.cta .wrap{display:flex;flex-direction:column;align-items:center;gap:20px}
+.cta img{height:150px;width:auto}
+.cta h2{font-size:clamp(30px,4vw,48px);font-weight:600}
+.contact{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:15px}
+.contact span{background:var(--white);border-radius:999px;padding:10px 18px;box-shadow:inset 0 0 0 1px var(--line)}
+footer{padding-block:32px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+
+/* self check-in animation */
+.sc{background:var(--ground)}
+.sc .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+@media (max-width:900px){.sc .wrap{grid-template-columns:1fr}}
+.sc-list{list-style:none;margin:28px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.sc-list button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:start;padding:16px 18px;border-radius:20px;transition:background .25s,box-shadow .25s}
+.sc-list button:hover{background:rgba(255,255,255,.6)}
+.sc-list button:focus-visible{outline:3px solid var(--sky)}
+.sc-list button.on{background:var(--white);box-shadow:0 14px 30px -18px rgba(13,41,74,.35)}
+.sc-list .n{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:15px;background:var(--white);color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line);transition:background .25s,color .25s}
+.sc-list button.on .n{background:var(--navy);color:var(--white);box-shadow:none}
+.sc-list b{display:block;font-family:var(--display);font-weight:600;font-size:18px;line-height:1.3}
+.sc-list small{display:block;color:var(--muted);font-size:15px;margin-top:3px}
+.sc-ctl{display:flex;align-items:center;gap:14px;margin-top:18px;font-size:14px;color:var(--muted)}
+.sc-ctl button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;background:var(--white);box-shadow:inset 0 0 0 1.5px var(--line);color:var(--navy);font-weight:500}
+.sc-ctl button:focus-visible{outline:3px solid var(--sky)}
+.sc-stage{display:flex;justify-content:center;position:relative}
+.sc-stage::before{content:"";position:absolute;width:420px;max-width:100%;aspect-ratio:1;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(92,187,255,.35),transparent)}
+.sc-phone{position:relative;width:300px;height:600px;max-width:100%;border:10px solid #06162A;border-radius:46px;background:var(--ground);overflow:hidden;box-shadow:0 40px 80px -30px rgba(13,41,74,.55)}
+.sc-phone .notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:88px;height:22px;border-radius:12px;background:#06162A;z-index:3}
+.sc-scene{position:absolute;inset:44px 16px 34px;display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateY(14px);transition:opacity .45s,transform .45s;pointer-events:none}
+.sc-scene.on{opacity:1;transform:none}
+.sc-prog{position:absolute;left:16px;right:16px;bottom:14px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.sc-prog i{display:block;height:100%;width:0;background:var(--blue);border-radius:4px}
+.sc-prog i.run{animation:scProg var(--sc-dur,3800ms) linear forwards}
+@keyframes scProg{to{width:100%}}
+@keyframes scIn{from{opacity:0;transform:translateY(8px)}}
+@keyframes scPop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes scScan{0%{top:8%}50%{top:84%}100%{top:8%}}
+@keyframes scTap{0%{transform:scale(.6);opacity:.55}100%{transform:scale(2.4);opacity:0}}
+@keyframes scTick{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@keyframes scOpen{to{transform:translateY(-5px) rotate(-18deg)}}
+.sc-scene.on .a{animation:scIn .5s both}
+.sc-scene.on .d1{animation-delay:.35s}.sc-scene.on .d2{animation-delay:.75s}.sc-scene.on .d3{animation-delay:1.15s}.sc-scene.on .d4{animation-delay:1.55s}.sc-scene.on .d5{animation-delay:1.95s}.sc-scene.on .d6{animation-delay:2.35s}
+.sc-card{background:var(--white);border-radius:18px;padding:14px}
+.sc-msg{font-family:var(--ui);font-size:13px;line-height:1.5}
+.sc-btn{position:relative;display:flex;justify-content:center;align-items:center;min-height:42px;border-radius:999px;background:var(--navy);color:var(--white);font-family:var(--ui);font-size:13px;font-weight:500;overflow:visible}
+.sc-btn .tap{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--sky);opacity:0}
+.sc-scene.on .sc-btn .tap{animation:scTap .9s 1.6s ease-out 2}
+.sc-cam{position:relative;height:190px;border-radius:18px;background:#0A1E38;display:grid;place-items:center;overflow:hidden}
+.sc-pass{width:72%;height:62%;border-radius:10px;background:#F4F7FB;display:grid;grid-template-columns:34% 1fr;gap:8px;padding:10px;box-sizing:border-box}
+.sc-pass i{border-radius:6px;background:#CFE3F7}
+.sc-pass span{display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.sc-pass span em{height:6px;border-radius:3px;background:#C9D4E3}
+.sc-cam .corner{position:absolute;inset:14px;border:2px dashed rgba(92,187,255,.6);border-radius:12px}
+.sc-cam .line{position:absolute;left:10%;right:10%;height:2px;background:var(--sky);box-shadow:0 0 12px 2px rgba(92,187,255,.8);top:8%}
+.sc-scene.on .sc-cam .line{animation:scScan 1.8s ease-in-out infinite}
+.sc-field{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:12px;background:var(--white);font-family:var(--ui);font-size:12px}
+.sc-field span{color:var(--muted)}
+.sc-field b{font-family:var(--mono);font-weight:500}
+.sc-rule{display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:14px;background:var(--white);font-family:var(--ui);font-size:12.5px}
+.sc-rule svg{flex:none}
+.sc-rule path{stroke-dasharray:24;stroke-dashoffset:0}
+.sc-scene.on .sc-rule path{animation:scTick .35s both}
+.sc-scene.on .r1 path{animation-delay:.6s}.sc-scene.on .r2 path{animation-delay:1.1s}.sc-scene.on .r3 path{animation-delay:1.6s}
+.sc-ok{width:64px;height:64px;border-radius:50%;background:var(--ok-bg);display:grid;place-items:center;align-self:center}
+.sc-scene.on .sc-ok{animation:scPop .5s both}
+.sc-code{display:flex;gap:6px;justify-content:center}
+.sc-code span{width:40px;height:50px;border-radius:12px;background:var(--white);display:grid;place-items:center;font-family:var(--mono);font-size:24px;font-weight:500;color:var(--navy)}
+.sc-lock{align-self:center}
+.sc-lock .sh{transform-origin:16px 14px}
+.sc-scene.on .sc-lock .sh{animation:scOpen .5s 2.6s both}
+.sc-t{font-family:var(--ui);font-size:11px;color:var(--muted)}
+.sc-h{font-family:var(--ui);font-size:17px;font-weight:600;line-height:1.3}
+.sc-shut{position:absolute;bottom:10px;left:50%;margin-left:-19px;width:38px;height:38px;border-radius:50%;border:3px solid #fff;background:rgba(255,255,255,.3);box-sizing:border-box}
+.sc-scene.on .sc-shut{animation:scPress .3s .8s both}
+@keyframes scPress{50%{transform:scale(.8)}}
+.sc-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.sc-scene.on .sc-flash{animation:scFlash .55s .9s}
+@keyframes scFlash{0%{opacity:0}30%{opacity:.9}100%{opacity:0}}
+.sc-auto{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--ok-bg);color:var(--ok);font-family:var(--ui);font-size:12px;font-weight:600}
+.sc-field .tg{font-style:normal;font-family:var(--ui);font-size:10px;font-weight:600;color:var(--ok);background:var(--ok-bg);border-radius:999px;padding:2px 7px;align-self:center}
+.sc-field b{margin-left:auto}
+.sc-cam{height:170px}
+.sc-hl{color:var(--blue);font-weight:600}
+@media (prefers-reduced-motion:reduce){.sc-scene{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="top">
+<div class="wrap">
+<a class="brand" href="#top"><img src="emblem.png" alt=""><b>MOUNTA</b></a>
+<nav class="links" aria-label="หลัก">
+<a href="#selfcheckin">เช็คอินด้วยตนเอง</a>
+<a href="#journey">เส้นทางแขก</a>
+<a href="#law">ตม.30 &amp; ร.ร.3</a>
+<a href="#modules">ฟีเจอร์ทั้งหมด</a>
+<a href="#pricing">ราคา</a>
+<a href="#faq">คำถาม</a>
+</nav>
+<a class="btn primary" href="#contact">ขอดูตัวอย่างระบบ</a>
+</div>
+</header>
+
+<main id="top">
+<section class="hero" aria-labelledby="hero-h">
+<div class="wrap">
+<div>
+<p class="eyebrow">Cloud PMS &amp; Self Check-in</p>
+<h1 id="hero-h" style="margin-top:14px">ที่พักของคุณ<br>ดูแลได้จาก<em>หน้าจอเดียว</em></h1>
+<p class="lead">Mounta รวมการจองจากทุก OTA, เช็คอินออนไลน์, รหัสประตู, แชทกับแขก, งานแม่บ้าน, ตม.30 และบัญชีไว้ในระบบเดียว สำหรับ Airbnb โฮสเทล และบูทีคโฮเทล</p>
+<div class="ctas">
+<a class="btn primary" href="#contact">ขอดูตัวอย่างระบบ</a>
+<a class="btn ghost" href="#journey">ดูว่าระบบทำอะไรได้</a>
+</div>
+<p class="note">ใช้ผ่านเว็บได้ทุกอุปกรณ์ · แขกไม่ต้องโหลดแอป · ภาษาไทย อังกฤษ จีน</p>
+</div>
+
+<div class="stage">
+<div class="browser ui" aria-label="ตัวอย่างหน้า Overview ของ Mounta" role="img">
+<div class="bar"><i></i><i></i><i></i><span>app.mounta.co/admin</span></div>
+<div class="app">
+<div class="side">
+<div class="lg"><img src="emblem.png" alt="">MOUNTA</div>
+<div class="ni on">Overview</div><div class="ni">Room board</div><div class="ni">Bookings</div><div class="ni">Chat</div><div class="ni">Guests</div><div class="ni">Calendar</div><div class="ni">OTA channels</div><div class="ni">TM30</div>
+<div class="grp">HK Manager</div><div class="ni">Housekeeping</div><div class="ni">Laundry</div>
+<div class="grp">Insights</div><div class="ni">Reports</div><div class="ni">Accounting</div>
+</div>
+<div class="main">
+<div class="greet"><small>Tuesday, 27 October</small><h4>Good morning, <span>Ploy</span>.</h4></div>
+<div class="stats">
+<div class="stat"><div class="l">Occupancy</div><div class="v">83%</div><div class="s">5/6 units</div></div>
+<div class="stat"><div class="l">Revenue · MTD</div><div class="v">฿86,400</div><div class="s">cash received</div></div>
+<div class="stat"><div class="l">Arrivals</div><div class="v">4</div><div class="s">1 expected</div></div>
+<div class="stat"><div class="l">Departures</div><div class="v">3</div><div class="s">all departed</div></div>
+</div>
+<div class="card">
+<h5>Room board <small>synced 2 min ago</small></h5>
+<div class="board">
+<span></span><span class="d">27</span><span class="d">28</span><span class="d">29</span><span class="d">30</span><span class="d">31</span><span class="d">1</span><span class="d">2</span>
+<span class="r" style="grid-row:2">Loft 1</span><span class="b ab" style="grid-row:2;grid-column:2/4">Airbnb · สมชาย</span><span class="b bc" style="grid-row:2;grid-column:5/9">Booking · Anna K.</span>
+<span class="r" style="grid-row:3">Loft 2</span><span class="b ab" style="grid-row:3;grid-column:2/5">Airbnb · Emma W.</span><span class="b dr" style="grid-row:3;grid-column:6/8">Direct · Tom R.</span>
+<span class="r" style="grid-row:4">Garden 1</span><span class="b bc" style="grid-row:4;grid-column:2/4">Booking · Li Wei</span><span class="b ag" style="grid-row:4;grid-column:4/7">Agoda · Park J.</span>
+<span class="r" style="grid-row:5">Studio 3</span><span class="b tc" style="grid-row:5;grid-column:3/8">Trip.com · Chen Y.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="phone ui" aria-label="ตัวอย่าง Stay pass ของแขก" role="img">
+<div class="notch"><i></i></div>
+<div class="in">
+<small style="color:var(--muted)">Your stay pass</small>
+<b style="font-size:16px;font-weight:600">Baan Doi Loft · Loft 2</b>
+<div class="card" style="padding:12px"><small style="color:var(--muted)">Main door code</small><div class="code">4821#</div><small style="color:var(--muted)">27 Oct 14:00 – 30 Oct 12:00</small></div>
+<div class="well" style="display:flex;justify-content:space-between;align-items:center"><span>Wi-Fi · BaanDoi_5G</span><span class="pill ink">Copy</span></div>
+<div class="well">Ask our team to clean your room?</div>
+<div class="well">Message us</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<div class="strip">
+<div class="wrap"><span>ทำงานร่วมกับช่องทางและอุปกรณ์ที่คุณใช้อยู่แล้ว</span><span>Airbnb</span><span>Booking.com</span><span>Agoda</span><span>Trip.com</span><span>LINE</span><span>TTLock</span><span>PromptPay</span><span>Beam</span></div>
+</div>
+
+
+<section class="sc" id="selfcheckin" aria-labelledby="sc-h">
+<div class="wrap">
+<div>
+<p class="eyebrow">Self check-in</p>
+<h2 id="sc-h" style="font-size:clamp(30px,3.6vw,44px);font-weight:600;line-height:1.2;margin-top:14px">แขกเช็คอินเองได้ใน 4 ขั้นตอน</h2>
+<p class="lead" style="margin-top:14px">ไม่ต้องมีคนรอหน้าเคาน์เตอร์ <span class="sc-hl">แขกแค่ถ่ายรูปพาสปอร์ต ระบบอ่านข้อมูลให้เอง</span> ใช้เวลาไม่กี่นาที แล้วเดินเข้าห้องได้เลย</p>
+<ol class="sc-list">
+<li><button type="button" data-sc="0" class="on" aria-pressed="true"><span class="n">1</span><span><b>รับลิงก์เช็คอิน</b><small>ระบบส่งลิงก์ทางอีเมลหรือแชททันทีที่มีการจอง</small></span></button></li>
+<li><button type="button" data-sc="1" aria-pressed="false"><span class="n">2</span><span><b>แค่ถ่ายรูปพาสปอร์ต</b><small>ระบบอ่านชื่อ สัญชาติ และเลขพาสปอร์ตให้เอง แขกไม่ต้องพิมพ์สักตัว ใช้กับบัตรประชาชนได้ด้วย</small></span></button></li>
+<li><button type="button" data-sc="2" aria-pressed="false"><span class="n">3</span><span><b>ยอมรับกฎของที่พัก</b><small>อ่านและกดยืนยันในหน้าเดียว ข้อมูลพร้อมส่ง ตม.30</small></span></button></li>
+<li><button type="button" data-sc="3" aria-pressed="false"><span class="n">4</span><span><b>ได้รหัสประตู เข้าห้องได้เลย</b><small>ระบบสร้างรหัสบน TTLock ให้เอง ใช้ได้ตั้งแต่เวลาเช็คอินจนถึงเวลาเช็คเอาท์</small></span></button></li>
+</ol>
+<div class="sc-ctl"><button type="button" id="scPlay" aria-pressed="false">❚❚ หยุดชั่วคราว</button><span id="scLabel">ขั้นตอนที่ 1 จาก 4</span></div>
+</div>
+
+<div class="sc-stage">
+<div class="sc-phone" role="img" aria-label="ภาพเคลื่อนไหวขั้นตอนเช็คอินด้วยตนเองบนมือถือ">
+<div class="notch"></div>
+
+<div class="sc-scene on">
+<p class="sc-t a">Today · 09:13</p>
+<div class="sc-card sc-msg a d1"><b>Baan Doi Loft</b><br>Hi Emma, your booking for 27–30 Oct is confirmed. Please check in online before you arrive.</div>
+<div class="sc-card a d2" style="display:flex;flex-direction:column;gap:10px">
+<span class="sc-t">Online check-in · 2 steps · about 2 minutes</span>
+<div class="sc-btn">Check in online<span class="tap"></span></div>
+</div>
+</div>
+
+<div class="sc-scene">
+<p class="sc-t a">Step 1 of 2 · Passport</p>
+<p class="sc-h a">Just take a photo of your passport</p>
+<div class="sc-cam a d1"><div class="sc-pass"><i></i><span><em style="width:90%"></em><em style="width:70%"></em><em style="width:80%"></em><em style="width:55%"></em></span></div><div class="corner"></div><div class="line"></div><div class="sc-shut"></div><div class="sc-flash"></div></div>
+<span class="sc-auto a d3">✓ Read automatically · no typing</span>
+<div class="sc-field a d4"><span>Name</span><b>WILSON EMMA</b><i class="tg">auto</i></div>
+<div class="sc-field a d5"><span>Nationality</span><b>GBR</b><i class="tg">auto</i></div>
+<div class="sc-field a d6"><span>Passport</span><b>534198271</b><i class="tg">auto</i></div>
+</div>
+
+<div class="sc-scene">
+<p class="sc-t a">Step 2 of 2 · House rules</p>
+<p class="sc-h a d1">Please read before you arrive</p>
+<div class="sc-rule r1 a d1"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="6" fill="#1774ED"/><path d="M6 11.5l3.2 3.2L16 8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Quiet hours 22:00 – 07:00</div>
+<div class="sc-rule r2 a d2"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="6" fill="#1774ED"/><path d="M6 11.5l3.2 3.2L16 8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>No smoking inside the room</div>
+<div class="sc-rule r3 a d3"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="6" fill="#1774ED"/><path d="M6 11.5l3.2 3.2L16 8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Check-out by 12:00</div>
+<div class="sc-btn a d5" style="margin-top:auto">Confirm check-in</div>
+</div>
+
+<div class="sc-scene">
+<div class="sc-ok a" style="margin-top:12px"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M9 17.5l5.5 5.5L25 12" fill="none" stroke="#2E7D4F" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<p class="sc-h a d1" style="text-align:center">You're checked in, Emma</p>
+<p class="sc-t a d1" style="text-align:center">Loft 2 · main door code</p>
+<div class="sc-code"><span class="a d2">4</span><span class="a d3">8</span><span class="a d4">2</span><span class="a d5">1</span><span class="a d6">#</span></div>
+<svg class="sc-lock a d6" width="44" height="52" viewBox="0 0 32 38" aria-hidden="true"><g class="sh"><path d="M9 16v-5a7 7 0 0 1 14 0v5" fill="none" stroke="#0D294A" stroke-width="3" stroke-linecap="round"/></g><rect x="4" y="16" width="24" height="19" rx="6" fill="#1774ED"/><circle cx="16" cy="25.5" r="2.6" fill="#fff"/></svg>
+<p class="sc-t a d6" style="text-align:center">Valid 27 Oct 14:00 → 30 Oct 12:00</p>
+</div>
+
+<div class="sc-prog"><i class="run"></i></div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="journey" aria-labelledby="journey-h">
+<div class="wrap">
+<div class="head">
+<p class="eyebrow">หนึ่งการจอง ตั้งแต่ต้นจนจบ</p>
+<h2 id="journey-h">ระบบทำงานแทนคุณ ตลอดการเข้าพักของแขกหนึ่งคน</h2>
+<p class="lead">ติดตาม Emma ที่จองห้อง Loft 2 ผ่าน Airbnb ดูว่าแต่ละขั้นตอน Mounta ทำอะไรให้บ้าง และพนักงานต้องทำอะไรเหลือ (คำตอบคือแทบไม่มี)</p>
+</div>
+
+<div class="journey">
+
+<article class="stop">
+<div class="time"><i></i><b>09:12</b><small>วันที่จอง</small></div>
+<div class="txt">
+<h3>การจองเข้าระบบเอง จากทุกช่องทาง</h3>
+<p>ไม่ต้องคีย์ซ้ำ ไม่ต้องกลัวจองซ้อน ทุกการจองไปรวมอยู่ในผังห้องเดียว</p>
+<ul class="ticks">
+<li>ซิงก์ปฏิทิน Airbnb, Booking.com, Agoda, Trip.com ผ่าน iCal</li>
+<li>อ่านอีเมลยืนยันการจองเข้าระบบ ได้ชื่อแขกและยอดเงินครบ</li>
+<li>ผังห้อง (Room board) และปฏิทินราคา ปิดห้องซ่อมได้ในคลิกเดียว</li>
+<li>รับจองตรงจาก LINE OA หน้าเว็บ และเอเจนต์ทัวร์</li>
+</ul>
+</div>
+<div class="shot ui">
+<div class="card">
+<h5>OTA channels <small>Baan Doi Loft</small></h5>
+<div class="row"><span class="b ab" style="border-radius:8px;padding:4px 8px">Airbnb</span><div class="gr"><small>iCal + email · last sync 09:12</small></div><span class="pill ok">Live</span></div>
+<div class="row"><span class="b bc" style="border-radius:8px;padding:4px 8px">Booking.com</span><div class="gr"><small>iCal + email · last sync 09:10</small></div><span class="pill ok">Live</span></div>
+<div class="row"><span class="b ag" style="border-radius:8px;padding:4px 8px">Agoda</span><div class="gr"><small>iCal · last sync 09:08</small></div><span class="pill ok">Live</span></div>
+<div class="row"><span class="b tc" style="border-radius:8px;padding:4px 8px">Trip.com</span><div class="gr"><small>iCal + email · last sync 09:11</small></div><span class="pill ok">Live</span></div>
+</div>
+<div class="card" style="display:flex;gap:10px;align-items:center"><span class="pill act">New</span><div class="gr" style="flex:1"><b style="font-weight:500">Emma Wilson · Loft 2</b><br><small style="color:var(--muted)">Airbnb · 27–30 Oct · 3 nights · ฿4,800</small></div></div>
+</div>
+</article>
+
+<article class="stop">
+<div class="time"><i></i><b>09:13</b><small>หนึ่งนาทีหลังจอง</small></div>
+<div class="txt">
+<h3>แขกเช็คอินออนไลน์ ก่อนเดินทางมาถึง</h3>
+<p>ระบบส่งลิงก์ให้แขกกรอกข้อมูลเอง พนักงานไม่ต้องถ่ายเอกสารหรือพิมพ์ชื่อจากพาสปอร์ต</p>
+<ul class="ticks">
+<li>แค่ถ่ายรูปพาสปอร์ตหรือบัตรประชาชน ระบบอ่านข้อมูลให้เอง ไม่ต้องพิมพ์</li>
+<li>แขกยอมรับกฎของที่พักในขั้นตอนเดียวกัน</li>
+<li>กันลงทะเบียนคนเดิมซ้ำ และจำข้อมูลแขกที่เคยมาพัก</li>
+<li>หน้าเช็คอิน 3 ภาษา ไทย อังกฤษ จีน</li>
+</ul>
+</div>
+<div class="shot center ui">
+<div class="phone" style="width:270px">
+<div class="notch"><i></i></div>
+<div class="in">
+<small style="color:var(--muted)">Online check-in · 2 of 3</small>
+<b style="font-size:16px;font-weight:600">Welcome, Emma</b>
+<div class="card" style="padding:12px;display:flex;gap:10px;align-items:center">
+<div style="width:40px;height:52px;border-radius:8px;background:var(--pale);flex:none"></div>
+<div style="font-family:var(--mono);font-size:10.5px;line-height:1.55">WILSON / EMMA<br>GBR · 1994-03-12<br>P&lt;GBRWILSON&lt;&lt;EMMA</div>
+</div>
+<div class="row" style="padding:4px 0"><span class="pill ok">✓</span><div class="gr">Passport read</div></div>
+<div class="row" style="padding:4px 0"><span class="pill ok">✓</span><div class="gr">Guest 2 · Thai ID</div></div>
+<div class="row" style="padding:4px 0"><span class="pill">3</span><div class="gr">House rules</div></div>
+<div class="btn primary" style="min-height:40px;font-size:13px;font-family:var(--ui)">Continue</div>
+</div>
+</div>
+</div>
+</article>
+
+<article class="stop">
+<div class="time"><i></i><b>14:00</b><small>วันเข้าพัก</small></div>
+<div class="txt">
+<h3>มาถึงแล้วเข้าห้องได้เลย ไม่ต้องรอใครเปิดประตู</h3>
+<p>รหัสประตูใช้ได้เฉพาะช่วงเวลาที่จองไว้ และหมดอายุเองตอนเช็คเอาท์</p>
+<ul class="ticks">
+<li>ระบบสร้างรหัสบนกลอน TTLock ให้เอง ไม่ต้องเปิดแอป TTLock ตั้งรหัสทีละห้อง</li>
+<li>รหัสใหม่ทุกการจอง ส่งให้แขกอัตโนมัติ และลบรหัสเดิมให้เมื่อมีการออกรหัสใหม่</li>
+<li>หรือใช้กล่องกุญแจ ระบบจัดการรหัสกล่องให้</li>
+<li>คู่มือเปิดประตูแบบภาพเคลื่อนไหว และแผนที่ที่จอดรถ</li>
+<li>Kiosk เช็คอินหน้าเคาน์เตอร์ รองรับแขก walk-in</li>
+</ul>
+</div>
+<div class="shot ui">
+<div class="card" style="background:var(--navy);color:var(--white)">
+<small style="color:#C9D8EA">Door code · Loft 2</small>
+<div class="code" style="color:var(--sky);font-size:40px">4821#</div>
+<small style="color:#C9D8EA">Valid 27 Oct 14:00 → 30 Oct 12:00</small>
+</div>
+<div class="card">
+<h5>Locks <small>6 online</small></h5>
+<div class="row"><div class="gr"><b>Loft 2 · front door</b><small>code sent to Emma · 13:02</small></div><span class="pill ok">Sent</span></div>
+<div class="row"><div class="gr"><b>Garden 1 · key box 3</b><small>Li Wei · box code 7720</small></div><span class="pill ok">Sent</span></div>
+<div class="row"><div class="gr"><b>Studio 3</b><small>waiting for online check-in</small></div><span class="pill act">Pending</span></div>
+</div>
+</div>
+</article>
+
+<article class="stop">
+<div class="time"><i></i><b>21:40</b><small>ระหว่างเข้าพัก</small></div>
+<div class="txt">
+<h3>Stay pass กับแชทที่แปลภาษาให้</h3>
+<p>ทุกอย่างที่แขกต้องใช้อยู่ในลิงก์เดียว แขกจึงไม่ต้องโทรมาถามรหัส Wi-Fi ตอนสามทุ่ม</p>
+<ul class="ticks">
+<li>Stay pass: รหัสประตู, Wi-Fi, คู่มือที่พัก และเวลาเช็คเอาท์</li>
+<li>แขกกดขอทำความสะอาดห้องหรือขอผ้าเช็ดตัวได้เอง</li>
+<li>แชทแปลไป-กลับอัตโนมัติ คุณพิมพ์ภาษาไทยได้เลย</li>
+<li>คำตอบสำเร็จรูป ส่งรูปและไฟล์ แจ้งเตือนเข้ามือถือทีมงาน</li>
+</ul>
+</div>
+<div class="shot ui">
+<div class="card" style="display:flex;flex-direction:column;gap:9px">
+<h5>Chat · Li Wei <span class="langs" role="group" aria-label="ภาษาของแขก"><button type="button" data-l="zh" aria-pressed="true">中文</button><button type="button" data-l="en" aria-pressed="false">EN</button><button type="button" data-l="ko" aria-pressed="false">한국어</button></span></h5>
+<div class="bub" id="g1">请问可以提前入住吗？<small>แปล: ขอเช็คอินก่อนเวลาได้ไหม</small></div>
+<div class="bub me">ได้ค่ะ ห้องพร้อมตั้งแต่ 12:00 รหัสประตูจะส่งให้ก่อนถึง<small id="m1">ส่งเป็น: 可以的，房间中午12点准备好，门锁密码会提前发送给您。</small></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">Wi-Fi password</span><span class="pill">Check-out time</span><span class="pill">Parking</span></div>
+</div>
+<div class="card">
+<h5>Stay requests <small>today</small></h5>
+<div class="row"><div class="gr"><b>Loft 2 · fresh towels</b><small>from stay pass · 21:40</small></div><span class="pill act">New</span></div>
+<div class="row"><div class="gr"><b>Garden 1 · clean room</b><small>from stay pass · 09:05</small></div><span class="pill ink">Done</span></div>
+</div>
+</div>
+</article>
+
+<article class="stop">
+<div class="time"><i></i><b>12:00</b><small>วันเช็คเอาท์</small></div>
+<div class="txt">
+<h3>แม่บ้านรู้งานเองทันทีที่แขกออก</h3>
+<p>สถานะห้องอัปเดตตามจริง หน้าเคาน์เตอร์รู้ว่าห้องไหนพร้อมขายโดยไม่ต้องเดินไปดู</p>
+<ul class="ticks">
+<li>บอร์ดงานแม่บ้านและปฏิทินแม่บ้าน</li>
+<li>แอปแม่บ้านผ่านลิงก์ พร้อม SOP และส่งรูปห้องที่ทำเสร็จ</li>
+<li>นับผ้าส่งซักและแจ้งร้านซักรีด</li>
+<li>สถานะห้องแบบโรงแรม: VD, OD, OOO, OOS</li>
+</ul>
+</div>
+<div class="shot ui">
+<div class="card">
+<h5>Housekeeping <small>27 Oct</small></h5>
+<div class="row"><div class="gr"><b>Loft 1</b><small>Departed 11:20 · Noi</small></div><span class="pill act">Dirty · VD</span></div>
+<div class="row"><div class="gr"><b>Loft 2</b><small>Arrival 14:00 · Noi</small></div><span class="pill warn">Cleaning</span></div>
+<div class="row"><div class="gr"><b>Garden 1</b><small>4 photos sent</small></div><span class="pill ok">Ready</span></div>
+<div class="row"><div class="gr"><b>Studio 4</b><small>Aircon repair</small></div><span class="pill">OOO</span></div>
+</div>
+<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>Laundry · sheets 8 · towels 12</span><span class="pill ink">Shop notified</span></div>
+</div>
+</article>
+
+<article class="stop">
+<div class="time"><i></i><b>23:30</b><small>ปิดยอดทุกคืน</small></div>
+<div class="txt">
+<h3>เงินเข้าครบไหม รู้ได้ทุกบาท</h3>
+<p>ระบบจับคู่ยอดโอนจาก OTA และ statement ธนาคารกับการจองให้ เห็นทันทีว่ารายการไหนยังไม่ได้เงิน</p>
+<ul class="ticks">
+<li>ลิงก์รับชำระเงินผ่าน Beam: บัตร, PromptPay, โมบายแบงก์กิ้ง และ e-wallet</li>
+<li>ปิดยอดรายวัน (Night audit) และใบเสร็จ</li>
+<li>นำไฟล์ payout ของ Airbnb, Booking.com, Trip.com เข้ามากระทบยอด</li>
+<li>บันทึกรายจ่ายแนบสลิป ส่งออกให้นักบัญชีหรือ Google Sheet</li>
+</ul>
+</div>
+<div class="shot ui">
+<div class="card">
+<h5>Payout reconciliation <small>Airbnb · Oct</small></h5>
+<div class="scroll">
+<table class="t">
+<thead><tr><th>Booking</th><th>Guest</th><th>Payout</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>HMX4K2</td><td>Emma Wilson</td><td>฿4,080</td><td><span class="pill ok">Matched</span></td></tr>
+<tr><td>HMQ7P1</td><td>Lucas M.</td><td>฿5,440</td><td><span class="pill ok">Matched</span></td></tr>
+<tr><td>HMA2Z8</td><td>สมชาย ใจดี</td><td>฿1,360</td><td><span class="pill ok">Matched</span></td></tr>
+<tr><td>HMB9C3</td><td>Anna K.</td><td>—</td><td><span class="pill act">Not paid yet</span></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<div class="stat"><div class="l">Cash today</div><div class="v">฿6,200</div></div>
+<div class="stat"><div class="l">PromptPay</div><div class="v">฿3,400</div></div>
+<div class="stat"><div class="l">Audit</div><div class="v" style="font-size:15px;padding-top:4px"><span class="pill ink">Closed</span></div></div>
+</div>
+</div>
+</article>
+
+</div>
+</div>
+</section>
+
+<section class="law" id="law" aria-labelledby="law-h">
+<div class="wrap">
+<div class="head">
+<p class="eyebrow">ทำเพื่อที่พักในไทยโดยเฉพาะ</p>
+<h2 id="law-h">ตม.30 และ ร.ร.3 เสร็จตั้งแต่แขกยังเดินทางไม่ถึง</h2>
+<p>ข้อมูลที่แขกกรอกตอนเช็คอินออนไลน์ถูกจัดรูปแบบไว้พร้อมส่ง คุณไม่ต้องพิมพ์ชื่อและเลขพาสปอร์ตซ้ำอีกรอบ</p>
+</div>
+<div class="grid">
+<div class="txt">
+<div class="item"><b>24h</b><div><h3>ส่งออกไฟล์ ตม.30</h3><p>เจ้าบ้านต้องแจ้งที่พักของคนต่างชาติภายใน 24 ชั่วโมง Mounta รวบรายชื่อแขกต่างชาติของวันนั้นให้ ส่งออกเป็นไฟล์ได้ในคลิกเดียว</p></div></div>
+<div class="item"><b>ร.ร.3</b><div><h3>บัตรทะเบียนผู้พัก</h3><p>พิมพ์บัตร ร.ร.3 จากข้อมูลชุดเดียวกัน ไม่ต้องให้แขกเขียนบัตรที่เคาน์เตอร์</p></div></div>
+<div class="item"><b>1×</b><div><h3>คนหนึ่งคน ลงทะเบียนครั้งเดียว</h3><p>ระบบเตือนเมื่อพาสปอร์ตเล่มเดียวกันถูกสแกนซ้ำ รายงานที่ส่งให้ ตม. จึงไม่มีชื่อซ้ำ</p></div></div>
+</div>
+<div class="shot ui">
+<div class="card">
+<h5>TM30 · foreign guests <small>27 Oct</small></h5>
+<div class="scroll">
+<table class="t">
+<thead><tr><th>Name</th><th>Nationality</th><th>Passport</th><th>Room</th><th>Arrival</th></tr></thead>
+<tbody>
+<tr><td>WILSON EMMA</td><td>GBR</td><td>5341•••</td><td>Loft 2</td><td>27/10</td></tr>
+<tr><td>LI WEI</td><td>CHN</td><td>E908•••</td><td>Garden 1</td><td>27/10</td></tr>
+<tr><td>PARK JIHO</td><td>KOR</td><td>M772•••</td><td>Garden 1</td><td>28/10</td></tr>
+<tr><td>SATO KENJI</td><td>JPN</td><td>TK41•••</td><td>Studio 3</td><td>27/10</td></tr>
+</tbody>
+</table>
+</div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><span class="pill ink">Export TM30 file</span><span class="pill">Print ร.ร.3 cards</span></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="modules" aria-labelledby="mod-h">
+<div class="wrap">
+<div class="head">
+<p class="eyebrow">ทุกเมนูในระบบ</p>
+<h2 id="mod-h">ทุกอย่างที่ที่พักขนาดเล็กต้องใช้ ในระบบเดียว</h2>
+<p class="lead">เมนูชุดเดียวกับที่ใช้งานจริงในหน้า admin จัดกลุ่มตามงานที่คุณทำในแต่ละวัน</p>
+</div>
+<div class="mods">
+<div class="mod"><h3>หน้าร้าน <span>06</span></h3><ul>
+<li><b>Overview</b><small>อัตราเข้าพัก รายได้ แขกเข้า-ออกวันนี้ และ AI insights</small></li>
+<li><b>Room board</b><small>ผังห้องรายวัน ย้ายห้องได้ และเตือนถ้ายังไม่ได้บอกแขก</small></li>
+<li><b>Bookings</b><small>การจองทุกช่องทาง folio ใบเสร็จ คืนเงิน</small></li>
+<li><b>Chat</b><small>แชทกับแขก แปลภาษาอัตโนมัติ</small></li>
+<li><b>Guests</b><small>ประวัติแขก พาสปอร์ต ตรวจชื่อซ้ำ</small></li>
+<li><b>Walk-ins &amp; Kiosk</b><small>รับแขก walk-in และเช็คอินที่ตู้หน้าเคาน์เตอร์</small></li>
+</ul></div>
+<div class="mod"><h3>ห้อง &amp; ราคา <span>04</span></h3><ul>
+<li><b>Rooms &amp; key boxes</b><small>ห้อง เตียง รูปห้อง สิ่งอำนวยความสะดวก กล่องกุญแจ</small></li>
+<li><b>Calendar</b><small>ปฏิทินราคา ราคาตามช่วง ปิดห้องซ่อม</small></li>
+<li><b>OTA channels</b><small>เชื่อม Airbnb, Booking.com, Agoda, Trip.com</small></li>
+<li><b>Travel agents</b><small>พอร์ทัลให้เอเจนต์จองเองในราคาเอเจนต์</small></li>
+</ul></div>
+<div class="mod"><h3>แขก &amp; เข้าพัก <span>04</span></h3><ul>
+<li><b>Online check-in</b><small>ฟอร์มเช็คอิน สแกนพาสปอร์ต ยอมรับกฎ</small></li>
+<li><b>Smart lock</b><small>สร้างรหัส TTLock ให้อัตโนมัติตามช่วงเวลาที่จอง ไม่ต้องตั้งเองในแอป</small></li>
+<li><b>Stay pass</b><small>รหัส Wi-Fi คู่มือ ขอทำความสะอาด แชท</small></li>
+<li><b>TM30 &amp; ร.ร.3</b><small>ส่งออกไฟล์ ตม.30 และพิมพ์บัตรทะเบียนผู้พัก</small></li>
+</ul></div>
+<div class="mod"><h3>HK Manager <span>04</span></h3><ul>
+<li><b>Housekeeping</b><small>บอร์ดงานแม่บ้าน สถานะห้องแบบโรงแรม</small></li>
+<li><b>HK calendar &amp; SOP</b><small>ตารางงานแม่บ้าน และขั้นตอนทำความสะอาด</small></li>
+<li><b>Laundry</b><small>นับผ้า ส่งซัก แจ้งร้านซักรีด</small></li>
+<li><b>Housekeepers</b><small>แอปแม่บ้านผ่านลิงก์ ส่งรูปห้องที่ทำเสร็จ</small></li>
+</ul></div>
+<div class="mod"><h3>การเงิน <span>04</span></h3><ul>
+<li><b>Payments</b><small>ลิงก์ชำระเงินผ่าน Beam รับบัตร PromptPay โมบายแบงก์กิ้ง e-wallet และกันห้องระหว่างรอจ่าย</small></li>
+<li><b>Night audit</b><small>ปิดยอดรายวัน เงินสดในมือ</small></li>
+<li><b>Payout import</b><small>กระทบยอด OTA และ statement ธนาคาร</small></li>
+<li><b>Accounting</b><small>รายจ่ายแนบสลิป งบการเงิน ส่งออกให้นักบัญชี</small></li>
+</ul></div>
+<div class="mod"><h3>Insights &amp; Admin <span>05</span></h3><ul>
+<li><b>Reports &amp; forecast</b><small>รายงานรายวัน พยากรณ์รายได้</small></li>
+<li><b>Business review</b><small>สรุปผลประกอบการสำหรับเจ้าของ</small></li>
+<li><b>Manager report</b><small>รายงานสำหรับผู้จัดการ</small></li>
+<li><b>Staff &amp; access</b><small>เพิ่มพนักงาน กำหนดสิทธิ์รายเมนู หลายที่พักในบัญชีเดียว</small></li>
+<li><b>Activity log</b><small>บันทึกว่าใครทำอะไร เมื่อไร</small></li>
+</ul></div>
+</div>
+</div>
+</section>
+
+<section class="mobile" style="background:var(--ground)" aria-labelledby="mob-h">
+<div class="wrap">
+<div>
+<p class="eyebrow">ใช้ได้ทุกอุปกรณ์</p>
+<h2 id="mob-h" style="font-size:clamp(30px,3.6vw,44px);font-weight:600;line-height:1.2;margin-top:14px">ดูแลที่พักจากมือถือ ได้ทุกที่</h2>
+<p class="lead" style="margin-top:16px">หน้าจอเดียวกับบนคอมพิวเตอร์ ปรับให้ใช้นิ้วกดได้ง่าย ติดตั้งไว้บนหน้าจอโทรศัพท์ได้เหมือนแอป และแจ้งเตือนทันทีเมื่อมีการจองหรือแชทใหม่</p>
+<ul class="ticks">
+<li>แท็บ Today, Board, Bookings และ Chat อยู่ใต้นิ้วโป้ง</li>
+<li>แจ้งเตือน push เมื่อมีการจองใหม่หรือแขกส่งข้อความ</li>
+<li>แขกใช้ผ่านลิงก์ ไม่ต้องโหลดแอป</li>
+</ul>
+</div>
+<div class="phones">
+<div class="phone ui" role="img" aria-label="หน้า Today บนมือถือ">
+<div class="notch"><i></i></div>
+<div class="in">
+<div class="greet"><small>Tuesday, 27 October</small><h4 style="font-size:20px">Good morning, <span>Ploy</span>.</h4></div>
+<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><div class="l">Occupancy</div><div class="v">83%</div></div><div class="stat"><div class="l">Arrivals</div><div class="v">4</div></div></div>
+<div class="card" style="padding:10px 12px">
+<div class="row"><div class="gr"><b>Emma Wilson</b><small>Loft 2 · Airbnb</small></div><span class="pill ink">In</span></div>
+<div class="row"><div class="gr"><b>Li Wei</b><small>Garden 1 · Booking</small></div><span class="pill ink">In</span></div>
+<div class="row"><div class="gr"><b>Kenji Sato</b><small>Studio 3 · Direct</small></div><span class="pill act">Pending</span></div>
+</div>
+<div class="tab"><span class="on">Today</span><span>Board</span><span>Bookings</span><span>Chat</span></div>
+</div>
+</div>
+<div class="phone ui" role="img" aria-label="หน้าการจองบนมือถือ">
+<div class="notch"><i></i></div>
+<div class="in">
+<small style="color:var(--muted)">Booking · HMX4K2</small>
+<b style="font-size:17px;font-weight:600">Emma Wilson</b>
+<small style="color:var(--muted)">Loft 2 · 27–30 Oct · 2 adults</small>
+<div class="card" style="padding:10px 12px"><small style="color:var(--muted)">Door code</small><div class="code" style="font-size:24px">4821#</div></div>
+<div class="card" style="padding:6px 12px">
+<div class="row"><div class="gr">Online check-in</div><span class="pill ok">2/2</span></div>
+<div class="row"><div class="gr">TM30</div><span class="pill warn">Ready</span></div>
+<div class="row"><div class="gr">Net payout</div><b style="font-weight:500">฿4,080</b></div>
+</div>
+<div class="tab"><span>Today</span><span>Board</span><span class="on">Bookings</span><span>Chat</span></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="pricing" aria-labelledby="price-h">
+<div class="wrap">
+<div class="head">
+<p class="eyebrow">ราคา</p>
+<h2 id="price-h">จ่ายตามจำนวนห้อง เริ่มจากห้องเดียวก็ได้</h2>
+<p class="lead">โตแค่ไหนก็ใช้ระบบเดิม เพิ่มห้องหรือเพิ่มที่พักได้ทุกเมื่อ จ่ายรายปีลด 2 เดือน</p>
+</div>
+<div class="plans">
+<div class="plan">
+<h3>Starter</h3>
+<div class="p">฿490 <small>/เดือน</small></div>
+<p class="who">รวม 2 ห้อง · ห้องถัดไป +฿150/เดือน</p>
+<ul><li>ปฏิทินรวมทุก OTA</li><li>การจองและข้อมูลแขก</li><li>เช็คอินออนไลน์</li><li>Stay pass และแชท</li></ul>
+<a class="btn ghost" href="#contact">เริ่มกับ Starter</a>
+</div>
+<div class="plan hl">
+<span class="tag">แนะนำ</span>
+<h3>Pro</h3>
+<div class="p">฿890 <small>/เดือน</small></div>
+<p class="who">รวม 3 ห้อง · ห้องถัดไป +฿200/เดือน<br>ทุกอย่างใน Starter และ</p>
+<ul><li>รหัสประตูอัตโนมัติ</li><li>แชทแปลภาษา</li><li>แม่บ้านและซักรีด</li><li>ตม.30, ร.ร.3 และรายงาน</li><li>ปิดยอดรายวัน</li></ul>
+<a class="btn" href="#contact">เริ่มกับ Pro</a>
+</div>
+<div class="plan">
+<h3>Business</h3>
+<div class="p" style="font-size:36px;padding-block:8px">คุยกับทีม</div>
+<p class="who">15 ห้องขึ้นไป หลายสาขา หรือรับบริหารห้องให้เจ้าของ</p>
+<ul><li>หลายที่พักในบัญชีเดียว</li><li>กระทบยอด OTA และธนาคาร</li><li>บัญชีและส่งออก</li><li>พอร์ทัลเอเจนต์ทัวร์</li><li>Kiosk หน้าเคาน์เตอร์</li></ul>
+<a class="btn ghost" href="#contact">ติดต่อทีมขาย</a>
+</div>
+</div>
+</div>
+</section>
+
+<section id="faq" style="background:var(--ground)" aria-labelledby="faq-h">
+<div class="wrap">
+<div class="head"><p class="eyebrow">คำถามที่พบบ่อย</p><h2 id="faq-h">ก่อนเริ่มใช้ Mounta</h2></div>
+<div class="faq">
+<details open><summary>ต้องติดตั้งโปรแกรมหรือซื้อเครื่องเพิ่มไหม</summary><p>ไม่ต้อง Mounta ทำงานบนคลาวด์ เปิดผ่านเบราว์เซอร์ได้ทั้งคอมพิวเตอร์ แท็บเล็ต และมือถือ ถ้าต้องการตู้เช็คอินหน้าเคาน์เตอร์ ใช้แท็บเล็ตเครื่องไหนก็ได้</p></details>
+<details><summary>แขกต้องโหลดแอปไหม</summary><p>ไม่ต้อง แขกได้รับลิงก์เช็คอินและ Stay pass ทางอีเมลหรือแชท เปิดในเบราว์เซอร์ของโทรศัพท์ได้เลย</p></details>
+<details><summary>ใช้กับกลอนประตูยี่ห้อไหนได้</summary><p>ตอนนี้รองรับกลอนดิจิทัล TTLock ระบบสร้างรหัสบนกลอนให้เองทุกการจอง ตั้งเวลาใช้ได้ตั้งแต่เช็คอินถึงเช็คเอาท์ แล้วส่งให้แขกอัตโนมัติ คุณไม่ต้องเปิดแอป TTLock ตั้งรหัสเอง ถ้าใช้กล่องกุญแจ ระบบจัดการรหัสกล่องและส่งให้แขกได้เหมือนกัน</p></details>
+<details><summary>เชื่อมกับ OTA ยังไง</summary><p>นำลิงก์ iCal จาก Airbnb, Booking.com, Agoda หรือ Trip.com มาใส่ในหน้า OTA channels และตั้งให้อีเมลยืนยันการจองส่งต่อเข้าระบบ เพื่อให้ได้ชื่อแขกและยอดเงินครบ</p></details>
+<details><summary>มีพนักงานหลายคน กำหนดสิทธิ์ได้ไหม</summary><p>ได้ หน้า Staff &amp; access เลือกได้ว่าแต่ละคนเห็นเมนูไหน เช่น แม่บ้านเห็นเฉพาะงานแม่บ้าน และทุกการกระทำถูกบันทึกไว้ใน Activity log</p></details>
+</div>
+</div>
+</section>
+
+<section class="cta" id="contact" aria-labelledby="cta-h">
+<div class="wrap">
+<img src="logo-light.png" alt="Mounta · Cloud PMS &amp; Self Check-in">
+<h2 id="cta-h">อยากเห็นระบบกับที่พักของคุณเอง?</h2>
+<p class="lead">ทักมาคุยกับทีม เราเปิดระบบตัวอย่างให้ดูพร้อมข้อมูลห้องของคุณ</p>
+<div class="contact"><span>LINE: [LINE OA]</span><span>โทร: [เบอร์โทร]</span><span>อีเมล: [อีเมล]@mounta.co</span></div>
+</div>
+</section>
+</main>
+
+<footer>
+<div class="wrap"><span>© 2569 Mounta · Cloud PMS &amp; Self Check-in</span><span>mounta.co</span></div>
+</footer>
+
+<script>
+(function(){
+  var data={
+    zh:{g:'请问可以提前入住吗？',gt:'แปล: ขอเช็คอินก่อนเวลาได้ไหม',m:'ส่งเป็น: 可以的，房间中午12点准备好，门锁密码会提前发送给您。'},
+    en:{g:'Can we check in early?',gt:'แปล: ขอเช็คอินก่อนเวลาได้ไหม',m:'ส่งเป็น: Sure, the room is ready from 12:00. We will send your door code before you arrive.'},
+    ko:{g:'일찍 체크인할 수 있을까요?',gt:'แปล: ขอเช็คอินก่อนเวลาได้ไหม',m:'ส่งเป็น: 네, 객실은 12시부터 준비됩니다. 도착 전에 도어 코드를 보내드릴게요.'}
+  };
+  var btns=document.querySelectorAll('.langs button');
+  var g1=document.getElementById('g1'),m1=document.getElementById('m1');
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      var d=data[b.getAttribute('data-l')];
+      btns.forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+      g1.firstChild.nodeValue=d.g;
+      g1.querySelector('small').textContent=d.gt;
+      m1.textContent=d.m;
+    });
+  });
+})();
+</script>
+
+<script>
+(function(){
+  var DUR=3800;
+  var root=document.getElementById('selfcheckin'); if(!root) return;
+  var scenes=root.querySelectorAll('.sc-scene'), btns=root.querySelectorAll('[data-sc]');
+  var bar=root.querySelector('.sc-prog i'), play=document.getElementById('scPlay'), label=document.getElementById('scLabel');
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var i=0, timer=null, paused=reduce;
+  root.style.setProperty('--sc-dur',DUR+'ms');
+  function show(n){
+    i=(n+scenes.length)%scenes.length;
+    scenes.forEach(function(s,k){s.classList.remove('on'); if(k===i){void s.offsetWidth; s.classList.add('on');}});
+    btns.forEach(function(b,k){b.classList.toggle('on',k===i); b.setAttribute('aria-pressed',k===i?'true':'false');});
+    label.textContent='ขั้นตอนที่ '+(i+1)+' จาก '+scenes.length;
+    bar.classList.remove('run'); bar.style.width=paused?'100%':''; if(!paused){void bar.offsetWidth; bar.classList.add('run');}
+  }
+  function schedule(){clearInterval(timer); if(!paused) timer=setInterval(function(){show(i+1)},DUR);}
+  function setPaused(p){paused=p; play.setAttribute('aria-pressed',p?'true':'false'); play.textContent=p?'▶ เล่นต่อ':'❚❚ หยุดชั่วคราว'; show(i); schedule();}
+  btns.forEach(function(b){b.addEventListener('click',function(){show(+b.getAttribute('data-sc')); schedule();});});
+  play.addEventListener('click',function(){setPaused(!paused);});
+  setPaused(paused);
+})();
+</script>
+</body>
+</html>
