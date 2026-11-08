@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mounta Cloud Clinic — ระบบบริหารคลินิกความงาม</title>
+<meta name="description" content="ระบบบริหารคลินิกความงามครบวงจร: นัดหมาย คิว OPD พร้อมแผนภาพใบหน้า คลังยาตามล็อต BOM ต่อหัตถการ ขายคอร์ส ค่าคอม และรายงาน ทดลองใช้เดโมได้ทันที">
+<meta property="og:title" content="Mounta Cloud Clinic — ระบบบริหารคลินิกความงาม">
+<meta property="og:description" content="นัดหมาย · คิว · OPD Face Chart · คลังยาตามล็อต · BOM · ขายคอร์ส · ค่าคอม · รายงาน">
+<meta property="og:image" content="https://cliniccloud.vercel.app/assets/shots/dashboard.webp">
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#123a4a;--navy2:#1d5568;--teal:#1592a5;--teal-d:#0e7686;--teal-l:#e3f4f6;--acc:#7fd3dd;--bg:#f4f8f9;--ink:#1c2a33;--mute:#6b7d86;--line:#e3ecef;--font:'Plus Jakarta Sans','IBM Plex Sans Thai',system-ui,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font);color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased;line-height:1.6}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:12px 20px;font-weight:700;font-size:15px;border:1px solid var(--line);background:#fff;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(16,57,74,.1)}
+.btn.p{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 8px 20px rgba(21,146,165,.28)}
+.btn.p:hover{background:var(--teal-d)}
+.btn.d{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.sm{padding:8px 14px;font-size:13.5px;border-radius:10px}
+/* nav */
+nav.top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav.top .wrap{display:flex;align-items:center;gap:28px;height:68px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.3px}
+.brand img{width:46px}.brand span{color:var(--teal)}
+.brand small{display:block;font-size:10px;letter-spacing:1.6px;color:var(--mute);font-weight:600;text-transform:uppercase;line-height:1}
+nav.top .links{display:flex;gap:22px;font-size:14.5px;font-weight:500;color:#41545e;margin-left:auto}
+nav.top .links a:hover{color:var(--teal-d)}
+/* hero */
+.hero{background:radial-gradient(circle at 10% 0%,#d8eff3,transparent 45%),radial-gradient(circle at 95% 30%,#e3edf9,transparent 40%),var(--bg);padding:72px 0 0;overflow:hidden}
+.hero .wrap{text-align:center}
+.tag{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--teal-d)}
+.tag i{width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block}
+h1{font-size:clamp(34px,5vw,56px);line-height:1.18;letter-spacing:-1.2px;margin:18px auto 14px;max-width:860px;font-weight:800}
+h1 span{background:linear-gradient(90deg,var(--teal),#3aa9d6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(16px,1.6vw,19px);color:#4c5f69;max-width:720px;margin:0 auto 28px}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.note{font-size:13px;color:var(--mute);margin-top:12px}
+.frame{margin:52px auto 0;max-width:1100px;border-radius:18px 18px 0 0;background:#fff;border:1px solid var(--line);border-bottom:none;box-shadow:0 30px 80px rgba(16,57,74,.18);overflow:hidden}
+.frame .bar{height:34px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#f6f9fa;border-bottom:1px solid var(--line)}
+.frame .bar i{width:11px;height:11px;border-radius:50%;background:#dfe7ea}
+.frame .bar span{margin-left:12px;font-size:12px;color:var(--mute);background:#fff;border:1px solid var(--line);border-radius:7px;padding:2px 12px}
+.frame img{display:block;width:100%;height:auto}
+/* sections */
+section{padding:88px 0}
+.sh{text-align:center;max-width:720px;margin:0 auto 46px}
+.sh .k{color:var(--teal-d);font-weight:700;font-size:13px;letter-spacing:1.4px;text-transform:uppercase}
+.sh h2{font-size:clamp(28px,3.4vw,40px);letter-spacing:-.8px;margin:8px 0 10px;line-height:1.25}
+.sh p{color:var(--mute);font-size:17px;margin:0}
+.strip{border-bottom:1px solid var(--line);padding:22px 0;background:#fff}
+.strip .wrap{display:flex;gap:34px;justify-content:center;flex-wrap:wrap;font-weight:600;color:#475a64;font-size:14.5px}
+.strip b{color:var(--teal-d)}
+.feat{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.fc{border:1px solid var(--line);border-radius:18px;padding:22px;background:#fff;transition:.15s}
+.fc:hover{box-shadow:0 14px 34px rgba(16,57,74,.08);transform:translateY(-2px)}
+.fc .ic{width:42px;height:42px;border-radius:12px;background:var(--teal-l);color:var(--teal-d);display:grid;place-items:center;margin-bottom:14px}
+.fc .ic svg{width:22px;height:22px}
+.fc h3{margin:0 0 6px;font-size:16.5px}.fc p{margin:0;color:var(--mute);font-size:14.5px}
+.spot{display:grid;grid-template-columns:1fr 1.25fr;gap:56px;align-items:center;margin-bottom:96px}
+.spot.r{grid-template-columns:1.25fr 1fr}.spot.r .tx{order:2}
+.spot:last-child{margin-bottom:0}
+.spot .k{color:var(--teal-d);font-weight:700;font-size:13px;letter-spacing:1.4px;text-transform:uppercase}
+.spot h3{font-size:clamp(24px,2.6vw,32px);letter-spacing:-.6px;line-height:1.3;margin:8px 0 12px}
+.spot p{color:#4f626c;margin:0 0 16px}
+.spot ul{list-style:none;padding:0;margin:0 0 22px}
+.spot li{display:flex;gap:10px;margin:9px 0;color:#2d3e47}
+.spot li:before{content:'';flex:none;width:20px;height:20px;border-radius:50%;margin-top:3px;background:var(--teal-l) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e7686' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/12px no-repeat}
+.shot{border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 24px 60px rgba(16,57,74,.14);background:#fff}
+.shot img{display:block;width:100%;height:auto}
+.alt{background:var(--bg)}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.role{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:8px}
+.role .av{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px}
+.role h3{margin:6px 0 0;font-size:17px}.role p{margin:0;color:var(--mute);font-size:14px;flex:1}
+.role .btn{justify-content:center;margin-top:8px}
+.pk{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+.pc{border:1px solid var(--line);border-radius:20px;padding:28px;background:#fff;display:flex;flex-direction:column}
+.pc.hl{border:2px solid var(--teal);box-shadow:0 20px 50px rgba(21,146,165,.15);position:relative}
+.pc.hl:before{content:'แนะนำ';position:absolute;top:-13px;left:28px;background:var(--teal);color:#fff;font-size:12px;font-weight:700;border-radius:99px;padding:3px 12px}
+.pc h3{margin:0;font-size:20px}.pc .s{color:var(--mute);font-size:14px;margin:4px 0 16px}
+.pc .price{font-size:22px;font-weight:800;margin-bottom:16px;color:var(--navy)}
+.pc ul{list-style:none;padding:0;margin:0 0 22px;flex:1}
+.pc li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:14.5px;display:flex;gap:8px}
+.pc li:before{content:'✓';color:var(--teal);font-weight:800}
+.pc li.soon{color:var(--mute)}.pc li.soon:before{content:'◷';color:#a3b1b8}
+.faq{max-width:820px;margin:0 auto}
+details{border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:12px;background:#fff}
+summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary:after{content:'+';color:var(--teal);font-size:20px;line-height:1}
+details[open] summary:after{content:'–'}
+details p{color:#4f626c;margin:10px 0 0}
+.final{background:radial-gradient(circle at 85% 15%,rgba(127,211,221,.35),transparent 40%),linear-gradient(150deg,var(--navy2),var(--navy));color:#d3e8ee;border-radius:26px;padding:56px;display:grid;grid-template-columns:1.4fr 1fr;gap:36px;align-items:center}
+.final h2{color:#fff;font-size:clamp(26px,3vw,36px);letter-spacing:-.6px;margin:0 0 10px;line-height:1.25}
+.final p{margin:0}
+.contact{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:22px}
+.contact b{color:#fff}.contact a{color:#fff;text-decoration:underline}
+footer{padding:36px 0;color:var(--mute);font-size:13.5px;border-top:1px solid var(--line);margin-top:88px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+@media (max-width:980px){.feat{grid-template-columns:repeat(2,1fr)}.roles{grid-template-columns:repeat(2,1fr)}.pk{grid-template-columns:1fr}.spot,.spot.r{grid-template-columns:1fr;gap:28px}.spot.r .tx{order:0}.final{grid-template-columns:1fr;padding:34px}nav.top .links{display:none}}
+@media (max-width:560px){.feat,.roles{grid-template-columns:1fr}section{padding:64px 0}}
+</style>
+</head>
+<body>
+<!-- ======= CONTACT: fill in real channels here; empty values are hidden ======= -->
+<script>
+const CONTACT = { line: '', lineUrl: '', phone: '', email: '' };
+</script>
+
+<nav class="top"><div class="wrap">
+  <a class="brand" href="#"><img src="assets/logo.png" alt="Mounta Cloud"><div>Mounta <span>Cloud</span><small>Clinic</small></div></a>
+  <div class="links"><a href="#features">ฟีเจอร์</a><a href="#opd">OPD Face Chart</a><a href="#stock">คลังยา & BOM</a><a href="#roles">ทดลองตามบทบาท</a><a href="#packages">แพ็กเกจ</a><a href="#faq">คำถามที่พบบ่อย</a></div>
+  <a class="btn p sm" href="demo/?role=admin">ทดลองใช้เดโม</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <span class="tag"><i></i>ระบบบริหารคลินิกความงาม จาก Mounta Cloud</span>
+  <h1>บริหารคลินิกความงาม<br><span>ครบ จบ ในระบบเดียว</span></h1>
+  <p class="lead">ตั้งแต่นัดหมายและคิว ใบประวัติการรักษาที่หมอวาดตำแหน่งฉีดบนใบหน้าได้ ตัดสต็อกยาตามล็อตอัตโนมัติด้วย BOM ไปจนถึงขายคอร์ส ค่าคอมมิชชัน และรายงานกำไร</p>
+  <div class="cta"><a class="btn p" href="demo/?role=admin">ทดลองใช้เดโมทันที →</a><a class="btn" href="#contact">ขอใบเสนอราคา</a></div>
+  <div class="note">ไม่ต้องสมัคร · ข้อมูลในเดโมเป็นข้อมูลสมมติทั้งหมด</div>
+  <div class="frame"><div class="bar"><i></i><i></i><i></i><span>Mounta Cloud Clinic</span></div><img src="assets/shots/dashboard.webp" alt="หน้าภาพรวมวันนี้: ตัวเลขสรุป ตารางนัดแยกตามแพทย์ และคิวในคลินิก" width="2880" height="1800" fetchpriority="high"></div>
+</div></header>
+
+<div class="strip"><div class="wrap"><div><b>ภาษาไทย</b> ทั้งระบบ</div><div>ออกแบบสำหรับ<b> คลินิกความงาม</b></div><div>ใช้บน <b>iPad</b> วาดด้วยนิ้ว/ปากกา</div><div>สิทธิ์แยกตาม<b> ตำแหน่ง</b></div><div>พิมพ์<b> ใบ OPD</b> ได้</div></div></div>
+
+<section id="features"><div class="wrap">
+  <div class="sh"><div class="k">ฟีเจอร์หลัก</div><h2>ทุกงานในคลินิก อยู่ในที่เดียว</h2><p>ลดงานเอกสาร ลดสต็อกหาย และเห็นตัวเลขของคลินิกแบบวันต่อวัน</p></div>
+  <div class="feat">
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></svg></div><h3>นัดหมาย & คิว</h3><p>ตารางแยกตามแพทย์/Therapist กันนัดชน เช็คอินแล้วได้เลขคิว เห็นเวลารอ</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="10" r="6"/><path d="M9 9h.01M15 9h.01M9.5 12.5c1.5 1 3.5 1 5 0M8 20h8"/></svg></div><h3>OPD Face Chart</h3><p>มาร์กจุด Botox/Filler บนใบหน้า รวมยอด U/cc อัตโนมัติ ลงนามดิจิทัล</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/></svg></div><h3>คลังยาตามล็อต</h3><p>เก็บเลขล็อตและวันหมดอายุ ใช้ล็อตที่หมดอายุก่อนเสมอ (FEFO) แจ้งเตือนใกล้หมด</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="16" r="3"/></svg></div><h3>BOM ต่อหัตถการ</h3><p>กำหนดยา/วัสดุต่อการทำ 1 ครั้ง ตัดสต็อกอัตโนมัติ เห็นต้นทุนและกำไรต่อหัตถการ</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/></svg></div><h3>ขาย & คอร์ส</h3><p>ขายบริการ คอร์ส และสินค้าในบิลเดียว ตัดคอร์สอัตโนมัติ ใบเสร็จพิมพ์ได้</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1M19 8v6M16 11h6"/></svg></div><h3>ค่าคอมมิชชัน</h3><p>คิดค่าคอมรายเดือนตามยอดขายและจำนวนเคส พนักงานเห็นเฉพาะของตัวเอง</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><h3>รายงานกำไร</h3><p>รายได้รายวัน ช่องทางชำระ ต้นทุนวัสดุ สต็อกที่เสีย และกำไรขั้นต้น ส่งออก CSV</p></div>
+    <div class="fc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>สิทธิ์ & ประวัติการใช้งาน</h3><p>กำหนดสิทธิ์ 22 รายการตามตำแหน่ง บันทึกทุกการกระทำว่าใครทำเมื่อไร</p></div>
+  </div>
+</div></section>
+
+<section id="opd" class="alt"><div class="wrap">
+  <div class="spot">
+    <div class="tx"><div class="k">OPD Face Chart</div><h3>ใบประวัติการรักษาดิจิทัล ที่หมอใช้งานได้จริง</h3>
+      <p>หน้าตาและข้อมูลเหมือนใบ OPD กระดาษของคลินิก แต่ค้นหาย้อนหลังได้ทุกครั้งที่มา</p>
+      <ul><li>มาร์กจุด Botox / Filler / Skin booster / ร้อยไหม บนแผนภาพใบหน้า พร้อมปริมาณต่อจุด</li><li>วาดพื้นที่ทำเลเซอร์ / HIFU และมาร์กรอยโรคพร้อมข้อความ</li><li>ดึงยอดรวมจากแผนภาพไปตัดสต็อกยาได้ในคลิกเดียว</li><li>ลายเซ็นผู้รับบริการและแพทย์ บันทึกแล้วแก้ไขย้อนหลังไม่ได้</li><li>พิมพ์ใบประวัติการรักษาตามแบบฟอร์มของคลินิก</li></ul>
+      <a class="btn d" href="demo/?role=dr.nicha&open=tx">ดูตัวอย่างบันทึก OPD →</a></div>
+    <div class="shot"><img src="assets/shots/treatment.webp" alt="บันทึกการรักษาพร้อมแผนภาพใบหน้า ยาและวัสดุพร้อมเลขล็อต และลายเซ็น" loading="lazy" width="2880" height="1800"></div>
+  </div>
+  <div class="spot r">
+    <div class="tx"><div class="k">ประวัติผู้รับบริการ</div><h3>เห็นทุกครั้งที่ลูกค้ามา ว่าทำอะไรไปบ้าง</h3>
+      <p>ไทม์ไลน์ประวัติการรักษาแบบละเอียด พร้อมข้อมูลสำคัญที่ต้องรู้ก่อนลงมือ</p>
+      <ul><li>แจ้งเตือนแพ้ยาและโรคประจำตัวเด่นชัดทุกหน้าที่เกี่ยวข้อง</li><li>น้ำหนัก ส่วนสูง BMI และกราฟแนวโน้ม</li><li>คอร์สคงเหลือ ครั้งที่ใช้ไป และนัดครั้งถัดไป</li><li>กรองตามหัตถการ ดูยาและล็อตที่ใช้แต่ละครั้ง</li></ul>
+      <a class="btn d" href="demo/?role=dr.nicha&open=history">ดูประวัติการรักษาตัวอย่าง →</a></div>
+    <div class="shot"><img src="assets/shots/history.webp" alt="ไทม์ไลน์ประวัติการรักษาแบบละเอียด" loading="lazy" width="2880" height="1800"></div>
+  </div>
+</div></section>
+
+<section id="stock"><div class="wrap">
+  <div class="spot">
+    <div class="tx"><div class="k">คลังยา & BOM</div><h3>สต็อกไม่หาย รู้ต้นทุนทุกหัตถการ</h3>
+      <p>ทุกครั้งที่บันทึกการรักษา ตัดคอร์ส หรือขายบริการ ระบบตัดยาและวัสดุตาม BOM ให้อัตโนมัติ</p>
+      <ul><li>เก็บสต็อกแยกตามล็อตและวันหมดอายุ ใช้ล็อตหมดอายุก่อน (FEFO)</li><li>แจ้งเตือนต่ำกว่าจุดสั่งซื้อ / ใกล้หมดอายุ / หมดอายุ</li><li>ไม่ตัดซ้ำเมื่อหมอบันทึกแล้วแคชเชียร์เก็บเงินต่อ</li><li>ปรับลดสต็อกพร้อมเหตุผล ทุกความเคลื่อนไหวตรวจสอบได้</li></ul>
+      <a class="btn d" href="demo/?role=admin#inventory">ดูคลังสินค้าในเดโม →</a></div>
+    <div class="shot"><img src="assets/shots/inventory.webp" alt="คลังยาและวัสดุ แยกตามล็อต พร้อมวันหมดอายุ" loading="lazy" width="2880" height="1800"></div>
+  </div>
+  <div class="spot r">
+    <div class="tx"><div class="k">ต้นทุน & กำไร</div><h3>ตั้งราคาได้มั่นใจ เพราะเห็นกำไรต่อหัตถการ</h3>
+      <p>BOM บอกต้นทุนวัสดุต่อครั้งของทุกหัตถการ เทียบกับราคาขายเป็น % กำไรขั้นต้นทันที</p>
+      <ul><li>แก้ BOM ได้เองไม่ต้องพึ่งโปรแกรมเมอร์</li><li>ต้นทุนเฉลี่ยถ่วงน้ำหนักตามราคาที่รับเข้าจริง</li><li>รายงานต้นทุนวัสดุ สต็อกเสีย และกำไรขั้นต้นรายเดือน</li></ul>
+      <a class="btn d" href="demo/?role=admin#services">ดู BOM ในเดโม →</a></div>
+    <div class="shot"><img src="assets/shots/services.webp" alt="หัตถการพร้อม BOM ต้นทุนวัสดุ และกำไรขั้นต้น" loading="lazy" width="2880" height="1800"></div>
+  </div>
+</div></section>
+
+<section id="roles" class="alt"><div class="wrap">
+  <div class="sh"><div class="k">ทดลองตามบทบาท</div><h2>ลองใช้ในมุมมองของทีมคุณ</h2><p>แต่ละตำแหน่งเห็นเมนูและข้อมูลต่างกันตามสิทธิ์ กดเข้าเดโมได้ทันที ไม่ต้องใส่รหัส</p></div>
+  <div class="roles">
+    <div class="role"><div class="av" style="background:#123a4a">ผจ</div><h3>ผู้จัดการ / เจ้าของ</h3><p>เห็นทุกอย่าง รายได้ ต้นทุน กำไร ตั้งค่าสิทธิ์ และประวัติการใช้งาน</p><a class="btn p sm" href="demo/?role=admin">เข้าเดโม</a></div>
+    <div class="role"><div class="av" style="background:#8b5e83">พญ</div><h3>แพทย์</h3><p>คิวของฉัน บันทึก OPD วาดตำแหน่งฉีด ดูประวัติผู้รับบริการ และค่าคอมของตัวเอง</p><a class="btn p sm" href="demo/?role=dr.nicha">เข้าเดโม</a></div>
+    <div class="role"><div class="av" style="background:#b9826a">TH</div><h3>Therapist</h3><p>ดูตารางนัด เช็คอิน ปิดเคส ตัดคอร์ส และบันทึกการทำทรีตเมนต์</p><a class="btn p sm" href="demo/?role=mook">เข้าเดโม</a></div>
+    <div class="role"><div class="av" style="background:#c4860f">CS</div><h3>แคชเชียร์ / ต้อนรับ</h3><p>ลงนัด ลงทะเบียนลูกค้า รับชำระเงินที่ส่งต่อจากห้องหัตถการ รับสินค้าเข้าคลัง</p><a class="btn p sm" href="demo/?role=beam">เข้าเดโม</a></div>
+  </div>
+</div></section>
+
+<section id="packages"><div class="wrap">
+  <div class="sh"><div class="k">แพ็กเกจ</div><h2>เลือกให้เหมาะกับขนาดคลินิก</h2><p>ราคาขึ้นกับจำนวนผู้ใช้และสาขา ติดต่อทีมงานเพื่อรับใบเสนอราคา</p></div>
+  <div class="pk">
+    <div class="pc"><h3>Starter</h3><div class="s">คลินิกเปิดใหม่ / ขนาดเล็ก</div><div class="price">ติดต่อฝ่ายขาย</div><ul><li>นัดหมาย คิว และเช็คอิน</li><li>ทะเบียนลูกค้าและประวัติการรับบริการ</li><li>ขายบริการ คอร์ส และสินค้า</li><li>ใบเสร็จและรายงานรายได้</li></ul><a class="btn" href="#contact" style="justify-content:center">ขอใบเสนอราคา</a></div>
+    <div class="pc hl"><h3>Professional</h3><div class="s">คลินิกที่มีแพทย์และงานหัตถการ</div><div class="price">ติดต่อฝ่ายขาย</div><ul><li>ทุกอย่างใน Starter</li><li>OPD Face Chart + ลายเซ็นดิจิทัล</li><li>คลังยาตามล็อต / FEFO / BOM</li><li>ค่าคอมมิชชันและรายงานกำไร</li><li>สิทธิ์ตามตำแหน่ง + ประวัติการใช้งาน</li><li>ปรับใบ OPD ตามแบบฟอร์มคลินิก</li></ul><a class="btn p" href="#contact" style="justify-content:center">ขอใบเสนอราคา</a></div>
+    <div class="pc"><h3>Enterprise</h3><div class="s">กลุ่มคลินิก / หลายสาขา</div><div class="price">ติดต่อฝ่ายขาย</div><ul><li>ทุกอย่างใน Professional</li><li>ปรับแต่งฟีเจอร์และรายงานเฉพาะ</li><li class="soon">หลายสาขาในบัญชีเดียว (กำลังพัฒนา)</li><li class="soon">รูปก่อน/หลังทำในบันทึก OPD (กำลังพัฒนา)</li><li class="soon">แจ้งเตือนนัดผ่าน LINE (กำลังพัฒนา)</li></ul><a class="btn" href="#contact" style="justify-content:center">คุยกับทีมงาน</a></div>
+  </div>
+</div></section>
+
+<section id="faq" class="alt"><div class="wrap">
+  <div class="sh"><div class="k">คำถามที่พบบ่อย</div><h2>สงสัยอะไร ถามได้</h2></div>
+  <div class="faq">
+    <details open><summary>ทดลองใช้เดโมต้องสมัครไหม?</summary><p>ไม่ต้องสมัคร กดเข้าเดโมได้ทันที ข้อมูลในเดโมเป็นข้อมูลสมมติทั้งหมด และเก็บอยู่ในเบราว์เซอร์ของคุณเท่านั้น กด "รีเซ็ตเดโม" ได้ทุกเมื่อ</p></details>
+    <details><summary>ใช้บน iPad ได้ไหม?</summary><p>ได้ หน้าบันทึกการรักษารองรับการแตะและวาดด้วยนิ้วหรือปากกา เหมาะให้แพทย์มาร์กตำแหน่งฉีดข้างเตียง</p></details>
+    <details><summary>ปรับใบ OPD ให้เหมือนแบบฟอร์มของคลินิกเราได้ไหม?</summary><p>ได้ ระบบพิมพ์ใบประวัติการรักษาออกมาตามแบบฟอร์มของคลินิก รวมถึงใช้ภาพใบหน้าจากใบ OPD เดิมของคลินิกได้</p></details>
+    <details><summary>BOM คืออะไร ช่วยอะไรคลินิก?</summary><p>BOM คือรายการยาและวัสดุที่ใช้ต่อการทำหัตถการ 1 ครั้ง เช่น โบท็อกซ์ใช้ Botox 50U เข็ม 2 ชิ้น ถุงมือ 1 คู่ ระบบจะตัดสต็อกให้อัตโนมัติและคำนวณต้นทุนต่อหัตถการ ทำให้รู้กำไรจริง</p></details>
+    <details><summary>พนักงานแต่ละคนเห็นข้อมูลเหมือนกันไหม?</summary><p>ไม่เหมือนกัน ผู้จัดการกำหนดได้ว่าแต่ละตำแหน่งเห็นอะไร เช่น แพทย์ไม่เห็นรายได้รวม แคชเชียร์ไม่เห็นต้นทุน และระบบบันทึกทุกการกระทำไว้ตรวจสอบย้อนหลัง</p></details>
+  </div>
+</div></section>
+
+<section id="contact" style="padding-bottom:0"><div class="wrap">
+  <div class="final">
+    <div><h2>พร้อมยกระดับคลินิกของคุณ?</h2><p>ลองใช้เดโมได้ทันที หรือคุยกับทีม Mounta Cloud เพื่อนัดสาธิตและรับใบเสนอราคา</p>
+      <div class="cta" style="justify-content:flex-start;margin-top:22px"><a class="btn p" href="demo/?role=admin">ทดลองใช้เดโม →</a></div></div>
+    <div class="contact" id="contactBox"><b>ติดต่อทีม Mounta Cloud</b><div id="contactList" style="margin-top:10px;line-height:2"></div></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap"><div class="brand" style="font-size:16px"><img src="assets/logo.png" alt="" style="width:36px"><div>Mounta <span>Cloud</span></div></div><div>© 2026 Mounta Cloud · ภาพหน้าจอและข้อมูลในเดโมเป็นข้อมูลสมมติ</div></div></footer>
+
+<script>
+(() => {
+  const c = CONTACT, rows = [];
+  if (c.line) rows.push(`LINE: ${c.lineUrl ? `<a href="${c.lineUrl}" target="_blank" rel="noopener">${c.line}</a>` : c.line}`);
+  if (c.phone) rows.push(`โทร: <a href="tel:${c.phone.replace(/[^0-9+]/g, '')}">${c.phone}</a>`);
+  if (c.email) rows.push(`อีเมล: <a href="mailto:${c.email}">${c.email}</a>`);
+  document.getElementById('contactList').innerHTML = rows.join('<br>') || 'ช่องทางติดต่อฝ่ายขายจะเปิดเร็วๆ นี้ — ระหว่างนี้ทดลองใช้เดโมได้เลย';
+})();
+</script>
+</body>
+</html>
